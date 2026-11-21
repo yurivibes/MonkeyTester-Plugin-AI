@@ -19,8 +19,8 @@ Mobile Controller ───────────────► MonkeyTester 
 MonkeyTester decides what to do with the answers, and this project only answers questions
 about images. The Controller never talks to this service. The only coupling to MonkeyTester
 is the HTTP contract, which is the OpenAI-style API that `vision_analyzer.py` already speaks,
-so MonkeyTester needs only a configuration change. MonkeyTester-Mac bundles this code and runs
-`serve` itself. It uses `status --json` to decide whether setup is needed, and `VTAI_*` variables
+so MonkeyTester needs only a configuration change. A launcher that bundles this code can run
+`serve` itself: it uses `status --json` to decide whether setup is needed, and `VTAI_*` variables
 to keep everything in its data folder, on ports it picks, with a token generated at each launch.
 MonkeyTester's **Settings → Models** reads and changes the model through this service's
 config API (`GET /models`, `POST /config`) — the model choice belongs to this service, and

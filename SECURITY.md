@@ -84,6 +84,6 @@ viewer's Settings.
 
 ## Reporting a problem
 
-Open an issue in this repo on the home Gitea
+Open an issue in this repo
 (`https://github.com/yurivibes/MonkeyTester-Plugin-AI/issues`), or tell the owner directly
 for anything that should not be written down first.

@@ -39,7 +39,7 @@ class RuntimeError_(Exception):
 def check_platform():
     if sys.platform != "darwin" or platform.machine() != "arm64":
         raise RuntimeError_(
-            f"MonkeyTester-AI needs macOS on Apple silicon (found {sys.platform} {platform.machine()})"
+            f"MonkeyTester-Plugin-AI needs macOS on Apple silicon (found {sys.platform} {platform.machine()})"
         )
 
 

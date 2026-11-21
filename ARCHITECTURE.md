@@ -1,6 +1,6 @@
 # Architecture
 
-MonkeyTester-AI gives MonkeyTester a vision model that runs on an Apple silicon Mac. It
+MonkeyTester-Plugin-AI gives MonkeyTester a vision model that runs on an Apple silicon Mac. It
 has two parts: a private copy of Ollama that runs the model, and a small Python gateway
 that is the only way in. The gateway can instead forward requests to an OpenAI-compatible
 server at a user-entered address (the `remote` provider, e.g. llama.cpp on a GPU machine) or to
@@ -11,7 +11,7 @@ HTTP contract, see [API.md](API.md).
 
 ```
                      screenshot                  chat completion + image
-Mobile Controller ───────────────► MonkeyTester ─────────────────────────► MonkeyTester-AI
+Mobile Controller ───────────────► MonkeyTester ─────────────────────────► MonkeyTester-Plugin-AI
    (phones)        GET /frame/<id>   (test logic) ◄─────────────────────────   (this project)
                                                        JSON with coordinates
 ```

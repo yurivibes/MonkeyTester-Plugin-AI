@@ -1,6 +1,6 @@
-# MonkeyTester-AI
+# MonkeyTester-Plugin-AI
 
-Runs a vision model on your Mac so that [MonkeyTester](http://192.168.125.70:3000/yurivibes/MonkeyTester)
+Runs a vision model on your Mac so that [MonkeyTester](https://github.com/yurivibes/MonkeyTester)
 can understand screenshots from your phones. It has three providers:
 
 - **Local** (the default): Qwen2.5-VL through a private copy of Ollama. With Local selected,
@@ -32,8 +32,8 @@ Ollama is **not** a dependency to install: `setup` downloads its own pinned copy
 `.runtime/` (see below). Don't install it with Homebrew or Nix for this project.
 
 ```bash
-git clone http://192.168.125.70:3000/yurivibes/MonkeyTester-AI.git
-cd MonkeyTester-AI
+git clone https://github.com/yurivibes/MonkeyTester-Plugin-AI.git
+cd MonkeyTester-Plugin-AI
 ```
 
 ### With Nix (macOS or Linux)

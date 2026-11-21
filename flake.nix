@@ -1,5 +1,5 @@
 {
-  description = "MonkeyTester-AI: the vision-model plugin for MonkeyTester (Ollama / remote server / GitHub Copilot)";
+  description = "MonkeyTester-Plugin-AI: the vision-model plugin for MonkeyTester (Ollama / remote server / GitHub Copilot)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
@@ -20,7 +20,7 @@
         # (or set VTAI_RUNTIME_DIR).
         requireCheckout = ''
           if [ ! -f bin/monkeytester-ai ] || [ ! -d monkeytester_ai ]; then
-            echo "Run this from the MonkeyTester-AI checkout (the directory with bin/monkeytester-ai)." >&2
+            echo "Run this from the MonkeyTester-Plugin-AI checkout (the directory with bin/monkeytester-ai)." >&2
             exit 1
           fi
         '';

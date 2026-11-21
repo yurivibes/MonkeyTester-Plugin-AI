@@ -1,4 +1,4 @@
-# MonkeyTester-AI HTTP API (api_version 3)
+# MonkeyTester-Plugin-AI HTTP API (api_version 3)
 
 This contract is the only coupling between MonkeyTester and this service. Change
 `API_VERSION` in `monkeytester_ai/config.py` when you break it.

@@ -1,7 +1,7 @@
-# MonkeyTester-AI — Agent Guide
+# MonkeyTester-Plugin-AI — Agent Guide
 
 ## Purpose
-The vision-model service for [MonkeyTester](http://192.168.125.70:3000/yurivibes/MonkeyTester),
+The vision-model service for [MonkeyTester](https://github.com/yurivibes/MonkeyTester),
 registered there as the `monkeytester-ai` device plugin. MonkeyTester's runner sends every
 vision request (an OpenAI-style chat completion with a screenshot) to this service's
 `/v1/chat/completions`, and this service decides who answers: a private Ollama running

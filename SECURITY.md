@@ -1,6 +1,6 @@
-# Security: MonkeyTester-AI
+# Security: MonkeyTester-Plugin-AI
 
-MonkeyTester-AI fronts a private Ollama (which has **no authentication** of its own and can
+MonkeyTester-Plugin-AI fronts a private Ollama (which has **no authentication** of its own and can
 pull and delete models), holds the GitHub Copilot sign-in and the remote server's API key,
 and forwards screenshots to whichever provider is selected. This document covers this
 service only; the family-wide overview (every service, its port, bind and auth, and the
@@ -85,5 +85,5 @@ viewer's Settings.
 ## Reporting a problem
 
 Open an issue in this repo on the home Gitea
-(`http://192.168.125.70:3000/yurivibes/MonkeyTester-AI/issues`), or tell the owner directly
+(`https://github.com/yurivibes/MonkeyTester-Plugin-AI/issues`), or tell the owner directly
 for anything that should not be written down first.

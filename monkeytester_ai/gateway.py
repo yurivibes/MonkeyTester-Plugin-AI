@@ -4,7 +4,7 @@ The service also implements the MonkeyTester device plugin contract
 (PLUGIN_API.md in the MonkeyTester repo, contract_version 1): it publishes
 /health, /devices, /actions and /jobs, and the plugin half of the API owns the
 model choice. Plugin routes answer errors in the contract's flat shape
-{"error": message, "code": code}; the MonkeyTester-AI routes keep its own
+{"error": message, "code": code}; the MonkeyTester-Plugin-AI routes keep its own
 nested shape from API.md.
 
 Three providers answer chat requests: "local" (the private Ollama, with the Qwen
@@ -115,7 +115,7 @@ def parse_json(body):
 
 
 def error_body(code, message):
-    """The one MonkeyTester-AI error shape, shared with the Mobile Controller. See API.md."""
+    """The one MonkeyTester-Plugin-AI error shape, shared with the Mobile Controller. See API.md."""
     return {"error": {"code": code, "message": message}}
 
 

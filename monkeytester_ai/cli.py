@@ -68,7 +68,7 @@ def _gateway_models(cfg):
 
 
 def status_report(cfg) -> dict:
-    """What `status --json` prints, for programs such as the MonkeyTester-Mac launcher."""
+    """What `status --json` prints, for programs such as a launcher."""
     health = _gateway_health(cfg)
     ollama_version = runtime.installed_version(cfg)
     model_installed = runtime.model_installed(cfg)

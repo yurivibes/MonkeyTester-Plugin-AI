@@ -7,8 +7,7 @@ vision request (an OpenAI-style chat completion with a screenshot) to this servi
 `/v1/chat/completions`, and this service decides who answers: a private Ollama running
 Qwen2.5-VL (`local`), an OpenAI-compatible server at a user-entered address (`remote`), or
 GitHub Copilot (`copilot`). It also owns the model choice, the remote API key and the GitHub
-sign-in; MonkeyTester holds none of them. MonkeyTester-Mac bundles this code and runs `serve`
-itself. See README.md (usage), ARCHITECTURE.md (design) and API.md (the HTTP contract).
+sign-in; MonkeyTester holds none of them. See README.md (usage), ARCHITECTURE.md (design) and API.md (the HTTP contract).
 
 ## Setup (do this first)
 Install the dependencies with the steps in README.md → **Install** before running or testing
@@ -27,11 +26,11 @@ anything; that section is the single source for them. In short:
 ## Critical Rules
 - **Work in a git worktree on a feature branch and open a PR; never commit to master.**
 - **Standard library only.** No third-party Python packages: the code must keep running on the
-  stock macOS Python 3.9 and inside MonkeyTester-Mac's bundled Python. Image work uses `sips`
+  stock macOS Python 3.9. Image work uses `sips`
   (built into macOS). A new system dependency goes into README.md → Install and `flake.nix`
   in the same PR.
 - **API.md is the contract.** MonkeyTester (`visual-tests/scripts/plugin_client.py`,
-  `vision_analyzer.py`) and MonkeyTester-Mac depend on it. Change API.md first for any
+  `vision_analyzer.py`) depends on it. Change API.md first for any
   route, field or error change; bump `api_version` for a breaking change and add a migration
   note. The plugin side also follows `PLUGIN_API.md` in the MonkeyTester repo
   (`contract_version: 1`).
@@ -66,6 +65,6 @@ private Ollama `VTAI_OLLAMA_PORT` (default 11435, localhost only). Every variabl
 README's Settings table.
 
 ## Tests
-`nix run .#tests`, or `python3 -m unittest discover tests` (the command CI runs,
+`nix run .#tests`, or `python3 -m unittest discover tests` (the same command as
 `.gitea/workflows/test.yml`). They pass on Linux and macOS. They don't check the real model's
 answers; the README's `ask` check does that on a Mac after `setup`.

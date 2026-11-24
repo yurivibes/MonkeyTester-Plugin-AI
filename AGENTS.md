@@ -1,7 +1,7 @@
 # MonkeyTester-Plugin-AI — Agent Guide
 
 ## Purpose
-The vision-model service for [MonkeyTester](https://github.com/yurivibes/MonkeyTester),
+The vision-model service for MonkeyTester,
 registered there as the `monkeytester-ai` device plugin. MonkeyTester's runner sends every
 vision request (an OpenAI-style chat completion with a screenshot) to this service's
 `/v1/chat/completions`, and this service decides who answers: a private Ollama running
@@ -66,5 +66,25 @@ README's Settings table.
 
 ## Tests
 `nix run .#tests`, or `python3 -m unittest discover tests` (the same command as
-`.gitea/workflows/test.yml`). They pass on Linux and macOS. They don't check the real model's
+`.github/workflows/test.yml`). They pass on Linux and macOS. They don't check the real model's
 answers; the README's `ask` check does that on a Mac after `setup`.
+
+## Hosting and review workflow
+This repo isn't tied to one code host: it can live on GitHub, Gitea/Forgejo, GitLab, Bitbucket or a
+mirror. Find the host from the remote you were asked to work against (`git remote -v`, usually
+`origin`) and use that host's tools; the docs never assume one.
+
+| Remote host | Review is called | CLI |
+|---|---|---|
+| github.com or GitHub Enterprise | pull request | `gh pr create` |
+| Gitea / Forgejo | pull request | `tea pr create` |
+| GitLab | merge request | `glab mr create` |
+| Bitbucket | pull request | web UI or REST API |
+
+- `master` changes only through a reviewed PR/MR that a maintainer merges. Never push to `master`
+  and never merge your own PR/MR.
+- Work on a feature branch in its own git worktree, based on the remote's `master`.
+- CI is in `.github/workflows/`, which both GitHub Actions and Gitea Actions run. Its test job runs the same command as `nix run .#tests`; on a host without Actions, run that locally before opening the PR/MR.
+- In docs, name sibling repos (e.g. MonkeyTester-Plugin-AI) instead of linking a host URL, link
+  files in this repo with relative paths, and stick to CommonMark plus GFM tables and code
+  fences (no host-only syntax such as `> [!NOTE]` callouts or `#123` autolinks).

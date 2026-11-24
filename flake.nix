@@ -36,7 +36,7 @@
           '';
         };
 
-        # Same command as .gitea/workflows/test.yml.
+        # Same command as .github/workflows/test.yml.
         tests = pkgs.writeShellApplication {
           name = "monkeytester-ai-tests";
           runtimeInputs = [ python ];

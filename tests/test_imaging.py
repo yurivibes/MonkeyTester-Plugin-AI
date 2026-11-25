@@ -62,6 +62,22 @@ class RescaleTests(unittest.TestCase):
         reply = json.loads(self.rescale('{"coordinates": [10, 20], "bbox": [10, 20, 30, 40], "confidence": 0.5}'))
         self.assertEqual(reply, {"coordinates": [40, 90], "bbox": [20, 60, 60, 120], "confidence": 0.5})
 
+    def test_point_on_box_edge_becomes_box_center(self):
+        # Just inside the corner still counts as the corner answer.
+        reply = json.loads(self.rescale('{"coordinates": [11, 21], "bbox": [10, 20, 30, 40]}'))
+        self.assertEqual(reply["coordinates"], [40, 90])
+
+    def test_point_outside_box_becomes_box_center(self):
+        reply = json.loads(self.rescale('{"coordinates": [5, 50], "bbox": [10, 20, 30, 40]}'))
+        self.assertEqual(reply["coordinates"], [40, 90])
+
+    def test_point_well_inside_a_container_box_is_kept(self):
+        # Seen on a Light / Dark / Auto control: the box is the whole control,
+        # the point is on "Light"; the box centre would tap "Dark".
+        reply = json.loads(self.rescale('{"coordinates": [112, 277], "bbox": [33, 236, 614, 326]}',
+                                        sx=1.0, sy=1.0))
+        self.assertEqual(reply["coordinates"], [112, 277])
+
     def test_nested_positions(self):
         reply = json.loads(self.rescale('{"elements": [{"text": "a", "position": [5, 5]}]}'))
         self.assertEqual(reply["elements"][0]["position"], [10, 15])

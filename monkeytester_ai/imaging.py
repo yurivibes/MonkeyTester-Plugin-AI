@@ -121,11 +121,26 @@ def _walk(value, sx, sy, width, height):
         else:
             out[key] = _walk(item, sx, sy, width, height)
     # Callers tap `coordinates`, but the model often puts the box's top-left
-    # corner there, which sits on or outside the element's edge.
+    # corner there, which sits on or outside the element's edge: then tap the
+    # box centre. A point well inside the box is the model's own aim and is
+    # kept, because the box is sometimes the whole container (a Light / Dark /
+    # Auto segmented control) and its centre is a different option.
     box = next((out[k] for k in BOX_KEYS if k in value and _numbers(value[k], 4)), None)
-    if box and _numbers(value.get("coordinates"), 2):
+    point = out.get("coordinates")
+    if box and _numbers(value.get("coordinates"), 2) and not _well_inside(point, box):
         out["coordinates"] = [(box[0] + box[2]) // 2, (box[1] + box[3]) // 2]
     return out
+
+
+# A point closer than this fraction of the box's size to an edge counts as
+# "on the edge" (the top-left-corner answer), not as the model's aim.
+EDGE_FRACTION = 0.1
+
+
+def _well_inside(point, box):
+    x1, y1, x2, y2 = min(box[0], box[2]), min(box[1], box[3]), max(box[0], box[2]), max(box[1], box[3])
+    mx, my = (x2 - x1) * EDGE_FRACTION, (y2 - y1) * EDGE_FRACTION
+    return x1 + mx < point[0] < x2 - mx and y1 + my < point[1] < y2 - my
 
 
 def _numbers(item, count):

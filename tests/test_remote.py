@@ -365,20 +365,20 @@ class RemotePersistenceTests(RemoteCase):
             self.assertEqual(self.call("/health", auth=False)[1]["provider"], "local", stored)
 
     def test_remote_config_override(self):
-        cfg = config.load({"VTAI_RUNTIME_DIR": str(self.runtime_dir),
-                           "VTAI_REMOTE_CONFIG": str(self.runtime_dir / "elsewhere" / "r.json")})
+        cfg = config.load({"MTAI_RUNTIME_DIR": str(self.runtime_dir),
+                           "MTAI_REMOTE_CONFIG": str(self.runtime_dir / "elsewhere" / "r.json")})
         self.assertEqual(cfg.remote_config, (self.runtime_dir / "elsewhere" / "r.json").resolve())
-        self.assertEqual(config.load({"VTAI_RUNTIME_DIR": str(self.runtime_dir)}).remote_config,
+        self.assertEqual(config.load({"MTAI_RUNTIME_DIR": str(self.runtime_dir)}).remote_config,
                          self.runtime_dir.resolve() / "remote.json")
 
 
 class StatusJsonRemoteTests(unittest.TestCase):
     def test_status_json_reports_remote(self):
         with tempfile.TemporaryDirectory() as tmp:
-            env = {**os.environ, "VTAI_RUNTIME_DIR": tmp, "VTAI_PORT": str(free_port()),
-                   "VTAI_OLLAMA_PORT": str(free_port())}
-            env.pop("VTAI_COPILOT_CONFIG", None)
-            env.pop("VTAI_REMOTE_CONFIG", None)
+            env = {**os.environ, "MTAI_RUNTIME_DIR": tmp, "MTAI_PORT": str(free_port()),
+                   "MTAI_OLLAMA_PORT": str(free_port())}
+            env.pop("MTAI_COPILOT_CONFIG", None)
+            env.pop("MTAI_REMOTE_CONFIG", None)
             run = lambda: json.loads(subprocess.run(
                 [sys.executable, str(BIN), "status", "--json"], env=env,
                 capture_output=True, text=True, timeout=30).stdout)

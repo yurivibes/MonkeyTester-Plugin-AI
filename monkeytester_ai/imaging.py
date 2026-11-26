@@ -70,7 +70,7 @@ def smart_resize(width: int, height: int, max_pixels: int):
 
 def resize_with_sips(data: bytes, fmt: str, width: int, height: int) -> bytes:
     """Resize with the sips tool built into macOS."""
-    with tempfile.TemporaryDirectory(prefix="vtai-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="mtai-") as tmp:
         src = Path(tmp) / f"in.{fmt}"
         dst = Path(tmp) / f"out.{fmt}"
         src.write_bytes(data)
@@ -78,7 +78,7 @@ def resize_with_sips(data: bytes, fmt: str, width: int, height: int) -> bytes:
             subprocess.run(
                 ["sips", "-z", str(int(height)), str(int(width)), str(src), "--out", str(dst)],
                 check=True, capture_output=True, timeout=30,
-                env={k: v for k, v in os.environ.items() if k != "VTAI_TOKEN"},
+                env={k: v for k, v in os.environ.items() if k != "MTAI_TOKEN"},
             )
             return dst.read_bytes()
         except (OSError, subprocess.SubprocessError) as exc:

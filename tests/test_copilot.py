@@ -49,7 +49,7 @@ class CopilotCase(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.runtime_dir = Path(tmp.name)
-        self.cfg = replace(config.load({"VTAI_RUNTIME_DIR": tmp.name}),
+        self.cfg = replace(config.load({"MTAI_RUNTIME_DIR": tmp.name}),
                            ollama_port=self.ollama.port, token=self.token)
         self.resized = []
         self.start_gateway()
@@ -371,7 +371,7 @@ class PersistenceTests(CopilotCase):
         self.assertEqual(json.loads(self.cfg.settings_path.read_text()),
                          {"provider": "copilot", "model": MODEL2, "copilot_model": "claude-sonnet-4",
                           "remote_url": "", "remote_model": "", "remote_resize": True})
-        self.start_gateway()  # same runtime dir, VTAI_MODEL still MODEL
+        self.start_gateway()  # same runtime dir, MTAI_MODEL still MODEL
         body = self.call("/config")[1]
         self.assertEqual(body["provider"], "copilot")
         self.assertEqual(body["model"]["selected"], MODEL2)
@@ -383,7 +383,7 @@ class PersistenceTests(CopilotCase):
         self.start_gateway()
         self.assertEqual(self.call("/health", auth=False)[1]["model"], MODEL2)
 
-    def test_no_file_means_vtai_model(self):
+    def test_no_file_means_mtai_model(self):
         self.assertFalse(self.cfg.settings_path.exists())
         self.assertEqual(self.app.cfg.model, MODEL)
         self.assertEqual(self.app.provider, "local")
@@ -406,8 +406,8 @@ class PersistenceTests(CopilotCase):
         self.assertEqual(self.call("/health", auth=False)[1]["provider"], "local")
 
     def test_copilot_config_override(self):
-        cfg = config.load({"VTAI_RUNTIME_DIR": str(self.runtime_dir),
-                           "VTAI_COPILOT_CONFIG": str(self.runtime_dir / "elsewhere" / "c.json")})
+        cfg = config.load({"MTAI_RUNTIME_DIR": str(self.runtime_dir),
+                           "MTAI_COPILOT_CONFIG": str(self.runtime_dir / "elsewhere" / "c.json")})
         self.assertEqual(cfg.copilot_config, (self.runtime_dir / "elsewhere" / "c.json").resolve())
         self.assertEqual(cfg.settings_path, self.runtime_dir.resolve() / "settings.json")
 
@@ -415,9 +415,9 @@ class PersistenceTests(CopilotCase):
 class StatusJsonCopilotTests(unittest.TestCase):
     def test_status_json_reports_provider_and_copilot(self):
         with tempfile.TemporaryDirectory() as tmp:
-            env = {**os.environ, "VTAI_RUNTIME_DIR": tmp, "VTAI_PORT": str(free_port()),
-                   "VTAI_OLLAMA_PORT": str(free_port())}
-            env.pop("VTAI_COPILOT_CONFIG", None)
+            env = {**os.environ, "MTAI_RUNTIME_DIR": tmp, "MTAI_PORT": str(free_port()),
+                   "MTAI_OLLAMA_PORT": str(free_port())}
+            env.pop("MTAI_COPILOT_CONFIG", None)
             run = lambda: json.loads(subprocess.run(
                 [sys.executable, str(BIN), "status", "--json"], env=env,
                 capture_output=True, text=True, timeout=30).stdout)

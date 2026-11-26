@@ -28,7 +28,7 @@ class GatewayCase(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()  # settings.json and copilot.json land here
         self.addCleanup(tmp.cleanup)
         self.runtime_dir = Path(tmp.name)
-        self.cfg = replace(config.load({"VTAI_RUNTIME_DIR": tmp.name}), ollama_port=self.fake.port,
+        self.cfg = replace(config.load({"MTAI_RUNTIME_DIR": tmp.name}), ollama_port=self.fake.port,
                            token=self.token)
         self.resized = []
 
@@ -173,7 +173,7 @@ class BackendDownTests(unittest.TestCase):
         fake.close()
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
-        cfg = replace(config.load({"VTAI_RUNTIME_DIR": tmp.name}), ollama_port=port)
+        cfg = replace(config.load({"MTAI_RUNTIME_DIR": tmp.name}), ollama_port=port)
         gw = gateway.Gateway(cfg, resizer=lambda d, f, w, h: d)
         self.assertEqual(gw.health()["ollama"], "unreachable")
         self.assertFalse(gw.health()["ok"])
@@ -255,14 +255,14 @@ class BindTests(unittest.TestCase):
         self.assertIsNone(gateway.bind_error("0.0.0.0", "tok"))
         for host in ("0.0.0.0", "::", "192.168.125.71"):
             message = gateway.bind_error(host, "  ")
-            self.assertIn("VTAI_TOKEN", message)
+            self.assertIn("MTAI_TOKEN", message)
             self.assertIn("EnvironmentVariables", message)
 
     def test_serve_lan_without_token_refuses_before_starting_ollama(self):
         with tempfile.TemporaryDirectory() as tmp:
-            cfg = replace(config.load({"VTAI_RUNTIME_DIR": tmp}), token="")
+            cfg = replace(config.load({"MTAI_RUNTIME_DIR": tmp}), token="")
             with mock.patch.object(runtime, "OllamaServer") as server:
-                with self.assertRaisesRegex(runtime.RuntimeError_, "VTAI_TOKEN"):
+                with self.assertRaisesRegex(runtime.RuntimeError_, "MTAI_TOKEN"):
                     gateway.serve(cfg, lan=True)
             server.assert_not_called()
 

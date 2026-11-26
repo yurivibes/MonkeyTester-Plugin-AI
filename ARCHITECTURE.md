@@ -20,7 +20,7 @@ MonkeyTester decides what to do with the answers, and this project only answers 
 about images. The Controller never talks to this service. The only coupling to MonkeyTester
 is the HTTP contract, which is the OpenAI-style API that `vision_analyzer.py` already speaks,
 so MonkeyTester needs only a configuration change. A launcher that bundles this code can run
-`serve` itself: it uses `status --json` to decide whether setup is needed, and `VTAI_*` variables
+`serve` itself: it uses `status --json` to decide whether setup is needed, and `MTAI_*` variables
 to keep everything in its data folder, on ports it picks, with a token generated at each launch.
 MonkeyTester's **Settings → Models** reads and changes the model through this service's
 config API (`GET /models`, `POST /config`) — the model choice belongs to this service, and
@@ -48,7 +48,7 @@ contract (`PLUGIN_API.md` in the MonkeyTester repo, `contract_version: 1`).
 
 | File | Responsibility |
 |---|---|
-| `monkeytester_ai/config.py` | Pinned Ollama version, checksum and model digests; settings from `VTAI_*` variables |
+| `monkeytester_ai/config.py` | Pinned Ollama version, checksum and model digests; settings from `MTAI_*` variables |
 | `monkeytester_ai/runtime.py` | Install checks, download and unpack, Ollama's process and environment, model checks |
 | `monkeytester_ai/imaging.py` | Image dimensions, resize calculation, `sips`, rescaling coordinates in replies |
 | `monkeytester_ai/gateway.py` | HTTP server, auth, request handling, provider switch, persisted selection (`settings.json`), Ollama supervision |
@@ -77,7 +77,7 @@ Using MonkeyTester's `FIND "login button"` as the example, on a 1170x2532 screen
 2. **Model:** the requested model name is replaced with the configured one, so MonkeyTester's
    setting doesn't matter.
 3. **Resize:** the image is resized with `sips` to 672x1456. Those are multiples of 28 and fit
-   within `VTAI_MAX_PIXELS`.
+   within `MTAI_MAX_PIXELS`.
 4. **Hint:** a system message tells the model the image size, and that a single point must be an
    element's center. This is only added when the request has exactly one image.
 5. **Inference:** the request goes to Ollama, which handles one at a time and queues the rest.
@@ -167,7 +167,7 @@ only file written outside the project, and `service uninstall` or `clean` remove
 2. Starts Ollama and waits until it responds.
 3. Checks the model is installed and its digest matches the pin.
 4. Applies `settings.json` (a saved Local model that is no longer installed falls back to
-   `VTAI_MODEL`), starts listening, and with the `local` provider loads the model in the
+   `MTAI_MODEL`), starts listening, and with the `local` provider loads the model in the
    background so that the first request isn't slow. A saved `remote` provider without an address
    and model starts as `local`. With `remote` or `copilot` nothing is preloaded; switching
    back to `local` lets the next request load the model.
@@ -184,7 +184,7 @@ only file written outside the project, and `service uninstall` or `clean` remove
 | Downloads | Ollama's SHA-256 and the model digest are pinned. The archive is rejected if any entry would land outside its folder |
 | Image input | PNG and JPEG only, 20MB body limit (`Content-Length` required), at most 16 images per request and 15MB per decoded image, 100M pixel source limit, and images are checked before reaching `sips` |
 | Errors | Bad JSON is a 400; an unexpected exception is a 500 whose message is only the exception type. Details go to the log |
-| Child processes | argv lists, no shell; `VTAI_TOKEN` is removed from the environment of Ollama, `sips` and `curl` |
+| Child processes | argv lists, no shell; `MTAI_TOKEN` is removed from the environment of Ollama, `sips` and `curl` |
 | Secrets | A token stored by `service install` goes in a plist with mode 600. The GitHub sign-in goes in `copilot.json` and the remote API key in `remote.json`, both mode 600, written atomically, and no route returns them |
 | Copilot | With the `copilot` provider, screenshots leave the Mac for GitHub's Copilot API |
 | Remote server | With the `remote` provider, screenshots (and the key, if set) go to the entered address, in plain text unless it is `https://` |

@@ -7,7 +7,7 @@ vLLM and Ollama's /v1 implement: GET /v1/models (the model list, {"object": "lis
 
 The address, the model and the resize switch are ordinary settings (settings.json, see
 Gateway). The optional API key is a secret: it lives in <runtime>/remote.json
-(VTAI_REMOTE_CONFIG overrides it), written atomically with mode 0600, is sent only as
+(MTAI_REMOTE_CONFIG overrides it), written atomically with mode 0600, is sent only as
 "Authorization: Bearer <key>" to the remote server and is never returned by any route;
 callers only see {configured, last4}.
 

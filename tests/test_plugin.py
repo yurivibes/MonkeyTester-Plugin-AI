@@ -40,7 +40,7 @@ class PluginCase(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()  # settings.json and copilot.json land here
         self.addCleanup(tmp.cleanup)
         self.runtime_dir = Path(tmp.name)
-        self.cfg = replace(config.load({"VTAI_RUNTIME_DIR": tmp.name}), ollama_port=self.fake.port,
+        self.cfg = replace(config.load({"MTAI_RUNTIME_DIR": tmp.name}), ollama_port=self.fake.port,
                            token=self.token)
         self.resized = []
 
@@ -220,7 +220,7 @@ class ConfigSetTests(PluginCase):
         status, body = self.call("/config", {"port": 9999}, {"X-Plugin-Token": self.token})
         self.assertEqual(status, 400)
         self.assertEqual(body["error"]["code"], "invalid_request")
-        self.assertIn("VTAI_PORT", body["error"]["message"])
+        self.assertIn("MTAI_PORT", body["error"]["message"])
 
     def test_token_rotation_returns_the_new_value_exactly_once(self):
         status, body = self.call("/config", {"token": {"generate": True}},
@@ -258,9 +258,9 @@ class StatusJsonTests(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         self.tmp = Path(tmp.name)
         self.env = {
-            "VTAI_RUNTIME_DIR": str(self.tmp / "runtime"),
-            "VTAI_PORT": str(free_port()),
-            "VTAI_OLLAMA_PORT": str(free_port()),
+            "MTAI_RUNTIME_DIR": str(self.tmp / "runtime"),
+            "MTAI_PORT": str(free_port()),
+            "MTAI_OLLAMA_PORT": str(free_port()),
         }
         cfg = config.load(self.env)
         ollama_dir = cfg.ollama_dir
@@ -285,7 +285,7 @@ class StatusJsonTests(unittest.TestCase):
         deadline = time.monotonic() + 15
         while time.monotonic() < deadline:
             try:
-                urllib.request.urlopen(f"http://127.0.0.1:{self.env['VTAI_PORT']}/health", timeout=1)
+                urllib.request.urlopen(f"http://127.0.0.1:{self.env['MTAI_PORT']}/health", timeout=1)
                 break
             except OSError:
                 time.sleep(0.1)

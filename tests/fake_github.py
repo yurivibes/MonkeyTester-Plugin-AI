@@ -3,7 +3,7 @@
 
 In-process for tests (FakeGitHub), or standalone for a scratch instance:
     python3 tests/fake_github.py <port>
-then serve with VTAI_GITHUB_URL=VTAI_GITHUB_API=http://127.0.0.1:<port>. The token
+then serve with MTAI_GITHUB_URL=MTAI_GITHUB_API=http://127.0.0.1:<port>. The token
 exchange points the Copilot API back at this same server.
 """
 import json

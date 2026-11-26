@@ -17,7 +17,7 @@
 
         # .runtime/ (Ollama, models, settings, sign-ins) defaults to the checkout,
         # never the read-only Nix store, so these run from the repo root
-        # (or set VTAI_RUNTIME_DIR).
+        # (or set MTAI_RUNTIME_DIR).
         requireCheckout = ''
           if [ ! -f bin/monkeytester-ai ] || [ ! -d monkeytester_ai ]; then
             echo "Run this from the MonkeyTester-Plugin-AI checkout (the directory with bin/monkeytester-ai)." >&2

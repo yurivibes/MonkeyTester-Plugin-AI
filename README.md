@@ -107,10 +107,27 @@ stops advertising `docs` and the link disappears.
 
 You can rename the plugin: the **Name** field in this plugin's **Configure** panel on
 MonkeyTester's **Settings → Plugins** page changes the name the service reports (`POST /config
-{"name": ...}`, see API.md → Plugin name). A name is 1–64 letters, digits, `_` or `-`, starting with
-a letter or digit. It is saved in `.runtime/settings.json` and survives restarts; **Reset to
-default** brings back `monkeytester-ai`. MonkeyTester still recognises the plugin as
-monkeytester-ai whatever it is called.
+{"name": ...}`, see API.md → Plugin name). A name is 1–64 **uppercase** letters, digits, `_` or `-`,
+starting with a letter or digit; a lowercase name is refused. It is saved in
+`.runtime/settings.json` and survives restarts; **Reset to default** brings back
+`AI`. MonkeyTester still recognises the plugin as this AI plugin whatever it is
+called. A lowercase name saved by an older version is uppercased when the service starts, and a
+saved old default (`monkeytester-ai` or `MONKEYTESTER-AI`) becomes `AI`.
+
+Tests call the plugin by its name, like a built-in command. The vision steps and the plugin's one
+action (switching the model) are all written under it:
+
+```
+AI: VERIFY the login screen is shown
+AI: CLICK Login
+AI: INPUT Search field at the top of the screen "hello"
+AI: set-model model=qwen2.5vl:3b-q4_K_M
+```
+
+(This replaces the bare `VERIFY:` / `CLICK:` / `INPUT:` steps and the old
+`PLUGIN: monkeytester-ai set-model ...` form. If you renamed the plugin, use the new name, e.g.
+`VISION: CLICK Login`.) Only the plugin name is uppercase: the CLI
+(`bin/monkeytester-ai`), the login service and the `.runtime/` paths are unchanged.
 
 ### MonkeyTester for Mac
 
@@ -144,7 +161,7 @@ Then under **Configuration** in MonkeyTester set:
 | Model | Any value; it's ignored |
 | API key | The token |
 
-In the current MonkeyTester viewer, enter the same token for the `monkeytester-ai` plugin
+In the current MonkeyTester viewer, enter the same token for the `AI` plugin
 in its **Settings** page.
 
 `--lan` refuses to start without `MTAI_TOKEN`: on the network the token is mandatory, on

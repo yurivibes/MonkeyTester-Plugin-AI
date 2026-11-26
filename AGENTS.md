@@ -2,7 +2,10 @@
 
 ## Purpose
 The vision-model service for MonkeyTester,
-registered there as the `monkeytester-ai` device plugin. MonkeyTester's runner sends every
+registered there as the `AI` device plugin (default name `AI`, renamable;
+tests call it as `AI: VERIFY <text>`, `AI: CLICK <text>`, `AI: INPUT ...` and
+`AI: set-model model=<id>`). Plugin names are uppercase; the service id, paths and LaunchAgent
+label stay `monkeytester-ai` (`config.SERVICE_NAME` vs `config.PLUGIN_DEFAULT_NAME`). MonkeyTester's runner sends every
 vision request (an OpenAI-style chat completion with a screenshot) to this service's
 `/v1/chat/completions`, and this service decides who answers: a private Ollama running
 Qwen2.5-VL (`local`), an OpenAI-compatible server at a user-entered address (`remote`), or

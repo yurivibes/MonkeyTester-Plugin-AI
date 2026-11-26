@@ -13,7 +13,7 @@ address, see remote.py; the Qwen pipeline is on unless remote_resize is false) a
 "copilot" (GitHub Copilot, see copilot.py, passed through unchanged except for the
 model). The choice of provider, each provider's model, the remote address and its
 resize switch are persisted in <runtime>/settings.json, as is a user-chosen plugin
-name (plugin.name in /health; the default is config.SERVICE_NAME).
+name (plugin.name in /health; the default is config.PLUGIN_DEFAULT_NAME).
 """
 from __future__ import annotations
 
@@ -61,11 +61,26 @@ REMOTE_NOT_SET = "set remote_url and remote_model first"
 CONFIG_KEYS = {"model", "token", "port", "provider", "copilot_model",
                "remote_url", "remote_model", "remote_resize", "remote_api_key", "name"}
 # PLUGIN_NAME_RE of PLUGIN_API.md (MonkeyTester repo): what /health plugin.name may be.
-PLUGIN_NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}")
+# Plugin names are uppercase: tests call the plugin as `<NAME>: <action>`.
+PLUGIN_NAME_RE = re.compile(r"[A-Z0-9][A-Z0-9_-]{0,63}")
+# The pre-uppercase rule, only to migrate a name saved in settings.json by an older version.
+LEGACY_PLUGIN_NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}")
 
 
 def valid_plugin_name(value):
     return isinstance(value, str) and PLUGIN_NAME_RE.fullmatch(value) is not None
+
+
+def migrate_stored_name(value):
+    """A name from settings.json: an old lowercase/mixed-case name is uppercased (a saved
+    "vision" becomes "VISION"), and an old default ("monkeytester-ai" / "MONKEYTESTER-AI")
+    becomes the current default. Returns None for anything that was never a valid name."""
+    if isinstance(value, str) and LEGACY_PLUGIN_NAME_RE.fullmatch(value) is not None:
+        upper = value.upper()
+        if upper in {n.upper() for n in cfgmod.LEGACY_DEFAULT_NAMES}:
+            return cfgmod.PLUGIN_DEFAULT_NAME
+        return upper
+    return None
 
 ACTIONS = [
     {
@@ -172,7 +187,7 @@ class Gateway:
         self.remote_url = ""      # normalised, without /v1
         self.remote_model = ""
         self.remote_resize = True
-        self.name = cfgmod.SERVICE_NAME  # plugin.name in /health; renamable via POST /config
+        self.name = cfgmod.PLUGIN_DEFAULT_NAME  # plugin.name in /health; renamable via POST /config
         self.jobs = {}
         self._job_seq = 0
         self._jobs_lock = threading.Lock()
@@ -185,11 +200,16 @@ class Gateway:
         """settings.json wins over MTAI_MODEL; without a file nothing changes."""
         stored = copilotmod.read_json(self.cfg.settings_path)
         name = stored.get("name")
-        if valid_plugin_name(name):
-            self.name = name
+        migrated = migrate_stored_name(name)
+        if migrated is not None:
+            if migrated != name:
+                # Kept in memory only; the next save_settings writes the uppercase name
+                # (or drops it when it is the default).
+                _log(f"plugin name {name!r} in settings.json read as {migrated}")
+            self.name = migrated
         elif name is not None:
             _log(f"ignoring invalid plugin name {name!r} in settings.json; "
-                 f"using {cfgmod.SERVICE_NAME}")
+                 f"using {cfgmod.PLUGIN_DEFAULT_NAME}")
         model = stored.get("model")
         if isinstance(model, str) and model:
             self.cfg = replace(self.cfg, model=model)
@@ -219,7 +239,7 @@ class Gateway:
             "provider": self.provider, "model": self.cfg.model,
             "copilot_model": self.copilot_model, "remote_url": self.remote_url,
             "remote_model": self.remote_model, "remote_resize": self.remote_resize}
-        if self.name != cfgmod.SERVICE_NAME:  # no "name" means the default name
+        if self.name != cfgmod.PLUGIN_DEFAULT_NAME:  # no "name" means the default name
             settings["name"] = self.name
         with self._settings_lock:
             copilotmod.write_private_json(self.cfg.settings_path, settings)
@@ -276,7 +296,7 @@ class Gateway:
             "ollama": "running" if reachable else "unreachable",
             "contract": PLUGIN_CONTRACT,
             "contract_version": PLUGIN_CONTRACT_VERSION,
-            "plugin": {"name": self.name, "default_name": cfgmod.SERVICE_NAME,
+            "plugin": {"name": self.name, "default_name": cfgmod.PLUGIN_DEFAULT_NAME,
                        "renamable": True, "version": cfgmod.SERVICE_VERSION},
             "host": {"os": sys.platform, "hostname": platform.node()},
             "devices": 1,
@@ -368,7 +388,7 @@ class Gateway:
         token = self.cfg.token
         return {
             "name": self.name,
-            "default_name": cfgmod.SERVICE_NAME,
+            "default_name": cfgmod.PLUGIN_DEFAULT_NAME,
             "provider": self.provider,
             "model": {"selected": self.cfg.model, "installed": self.installed_models()},
             "copilot": self.copilot_public(),
@@ -465,7 +485,7 @@ class Gateway:
         if "name" in request:
             name = request["name"]
             if not valid_plugin_name(name):
-                raise BadRequest("name must be 1-64 characters: letters, digits, '_' or '-', "
+                raise BadRequest("name must be uppercase: 1-64 characters A-Z, 0-9, '_' or '-', "
                                  "starting with a letter or digit", code="bad_request")
         provider = request.get("provider", self.provider)
         if provider not in PROVIDERS:

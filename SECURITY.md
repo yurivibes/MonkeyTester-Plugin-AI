@@ -63,7 +63,7 @@ hardening tiers) lives in the MonkeyTester repo's `SECURITY.md`.
    ```
 
    or add that key to an existing plist yourself and `launchctl bootout` / `bootstrap` it.
-3. Enter **the same token** for the `monkeytester-ai` plugin in the MonkeyTester viewer's
+3. Enter **the same token** for the `AI` plugin in the MonkeyTester viewer's
    **Settings** page. The viewer sends it on every call.
 
 To rotate: `POST /config {"token": {"generate": true}}` (returns the new token once and

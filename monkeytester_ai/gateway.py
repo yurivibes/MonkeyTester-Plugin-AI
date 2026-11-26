@@ -91,16 +91,16 @@ def is_loopback(host):
 
 
 def bind_error(host, token):
-    """Why serving on `host` is refused, or None: any non-loopback bind needs VTAI_TOKEN
+    """Why serving on `host` is refused, or None: any non-loopback bind needs MTAI_TOKEN
     (the gateway fronts Ollama, which has no auth of its own, and holds the Copilot
     sign-in and the remote API key)."""
     if (token or "").strip() or is_loopback(host):
         return None
-    return (f"--lan (listening on {host}) requires VTAI_TOKEN, because Ollama has no auth "
+    return (f"--lan (listening on {host}) requires MTAI_TOKEN, because Ollama has no auth "
             "of its own. Generate one with `python3 -c 'import secrets; "
-            "print(secrets.token_hex(32))'`, then either export VTAI_TOKEN=<token> and run "
+            "print(secrets.token_hex(32))'`, then either export MTAI_TOKEN=<token> and run "
             "`bin/monkeytester-ai service install --lan` (writes it into the LaunchAgent "
-            "plist's EnvironmentVariables), or add <key>VTAI_TOKEN</key> to that plist "
+            "plist's EnvironmentVariables), or add <key>MTAI_TOKEN</key> to that plist "
             "yourself. Enter the same token for the plugin in the MonkeyTester viewer's "
             "Settings. Without --lan the service listens on 127.0.0.1 only. See SECURITY.md.")
 
@@ -127,7 +127,7 @@ def contract_error(status, code, message):
 class Gateway:
     def __init__(self, cfg, resizer=imaging.resize_with_sips, copilot=None):
         self.cfg = cfg
-        self.default_model = cfg.model  # VTAI_MODEL: the fallback for a stale persisted model
+        self.default_model = cfg.model  # MTAI_MODEL: the fallback for a stale persisted model
         self.resizer = resizer
         self.copilot = copilot or copilotmod.CopilotClient(cfg.copilot_config)
         self.remote_key = remotemod.RemoteKey(cfg.remote_config)
@@ -145,7 +145,7 @@ class Gateway:
     # --- persisted selection ---
 
     def _load_settings(self):
-        """settings.json wins over VTAI_MODEL; without a file nothing changes."""
+        """settings.json wins over MTAI_MODEL; without a file nothing changes."""
         stored = copilotmod.read_json(self.cfg.settings_path)
         model = stored.get("model")
         if isinstance(model, str) and model:
@@ -179,7 +179,7 @@ class Gateway:
                 "remote_model": self.remote_model, "remote_resize": self.remote_resize})
 
     def reconcile_local_model(self):
-        """After Ollama starts: a persisted local model that is gone falls back to VTAI_MODEL."""
+        """After Ollama starts: a persisted local model that is gone falls back to MTAI_MODEL."""
         installed = self.installed_models()
         if installed and self.cfg.model not in installed:
             _log(f"selected model {self.cfg.model} is no longer installed; "
@@ -407,7 +407,7 @@ class Gateway:
             raise BadRequest(f"unknown setting: {unknown[0]}")
         if "port" in request:
             raise BadRequest("a running server cannot rebind; stop the service and restart it "
-                             "with VTAI_PORT (reinstall the login service with the new value)")
+                             "with MTAI_PORT (reinstall the login service with the new value)")
         # Validate everything that can fail before changing anything.
         provider = request.get("provider", self.provider)
         if provider not in PROVIDERS:
@@ -969,7 +969,7 @@ class Supervisor:
 
 def serve(cfg, lan=False):
     """Run Ollama and the gateway until interrupted."""
-    bind = "0.0.0.0" if lan else "127.0.0.1"  # nosec B104 - --lan is opt-in and needs VTAI_TOKEN
+    bind = "0.0.0.0" if lan else "127.0.0.1"  # nosec B104 - --lan is opt-in and needs MTAI_TOKEN
     problem = bind_error(bind, cfg.token)
     if problem:
         raise runtime.RuntimeError_(problem)

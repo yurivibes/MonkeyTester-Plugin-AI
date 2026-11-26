@@ -29,12 +29,12 @@ anything; that section is the single source for them. In short:
   stock macOS Python 3.9. Image work uses `sips`
   (built into macOS). A new system dependency goes into README.md → Install and `flake.nix`
   in the same PR.
-- **API.md is the contract.** MonkeyTester (`visual-tests/scripts/plugin_client.py`,
+- **API.md is the contract.** MonkeyTester (`mt-tests/scripts/plugin_client.py`,
   `vision_analyzer.py`) depends on it. Change API.md first for any
   route, field or error change; bump `api_version` for a breaking change and add a migration
   note. The plugin side also follows `PLUGIN_API.md` in the MonkeyTester repo
   (`contract_version: 1`).
-- **Everything lives in `.runtime/`** (or `VTAI_RUNTIME_DIR`). Nothing is written outside it
+- **Everything lives in `.runtime/`** (or `MTAI_RUNTIME_DIR`). Nothing is written outside it
   except the optional LaunchAgent plist. Don't touch the user's own `~/.ollama` or Ollama port.
 - **Secrets are write-only.** `copilot.json` and `remote.json` are mode 600, written atomically,
   and no route returns them; status shows only `{configured, last4}`/user. Keep it that way.
@@ -42,7 +42,7 @@ anything; that section is the single source for them. In short:
   `monkeytester_ai/config.py`. Change them only deliberately, and say so in the PR.
 - **Tests never touch the network or real hardware**: they run against `tests/fake_ollama.py`,
   `tests/fake_github.py` and `tests/fake_remote.py`. New behaviour gets a test against those.
-- **User-relevant changes** (commands, ports, `VTAI_*` variables, setup steps, provider
+- **User-relevant changes** (commands, ports, `MTAI_*` variables, setup steps, provider
   behaviour): update README.md in the same PR and add a "For the user" section to the PR
   description; otherwise write "For the user: no change".
 
@@ -50,7 +50,7 @@ anything; that section is the single source for them. In short:
 | Path | What |
 |---|---|
 | `bin/monkeytester-ai` | CLI entry point (`setup`, `serve`, `status`, `ask`, `service`, `clean`) |
-| `monkeytester_ai/config.py` | Pins and `VTAI_*` settings |
+| `monkeytester_ai/config.py` | Pins and `MTAI_*` settings |
 | `monkeytester_ai/runtime.py` | Ollama download, install checks, process supervision |
 | `monkeytester_ai/gateway.py` | HTTP server, auth, provider switch, jobs, `settings.json` |
 | `monkeytester_ai/imaging.py` | Resize (`sips`) and coordinate rescaling |
@@ -60,8 +60,8 @@ anything; that section is the single source for them. In short:
 | `tests/` | Unit tests with fake Ollama, GitHub and remote servers |
 
 ## Ports and environment
-Gateway `VTAI_PORT` (default 8091, `127.0.0.1` unless `serve --lan`, which needs `VTAI_TOKEN`);
-private Ollama `VTAI_OLLAMA_PORT` (default 11435, localhost only). Every variable is in the
+Gateway `MTAI_PORT` (default 8091, `127.0.0.1` unless `serve --lan`, which needs `MTAI_TOKEN`);
+private Ollama `MTAI_OLLAMA_PORT` (default 11435, localhost only). Every variable is in the
 README's Settings table.
 
 ## Tests

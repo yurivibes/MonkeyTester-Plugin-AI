@@ -38,9 +38,9 @@ class TempCase(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         self.tmp = Path(tmp.name)
         self.env = {
-            "VTAI_RUNTIME_DIR": str(self.tmp / "runtime"),
-            "VTAI_PORT": str(free_port()),
-            "VTAI_OLLAMA_PORT": str(free_port()),
+            "MTAI_RUNTIME_DIR": str(self.tmp / "runtime"),
+            "MTAI_PORT": str(free_port()),
+            "MTAI_OLLAMA_PORT": str(free_port()),
         }
         self.cfg = config.load(self.env)
 
@@ -140,21 +140,21 @@ class ChecksTests(TempCase):
         self.assertNotIn("OLLAMA_DEBUG", env)
 
     def test_child_environment_never_gets_the_service_token(self):
-        with mock.patch.dict(os.environ, {"VTAI_TOKEN": "s3cret-gateway-token", "OLLAMA_HOST": "0.0.0.0:1"}):
+        with mock.patch.dict(os.environ, {"MTAI_TOKEN": "s3cret-gateway-token", "OLLAMA_HOST": "0.0.0.0:1"}):
             env = runtime.ollama_env(self.cfg)
-            self.assertNotIn("VTAI_TOKEN", env)
+            self.assertNotIn("MTAI_TOKEN", env)
             self.assertEqual(env["OLLAMA_HOST"], f"127.0.0.1:{self.cfg.ollama_port}")
-            self.assertNotIn("VTAI_TOKEN", config.child_env())
+            self.assertNotIn("MTAI_TOKEN", config.child_env())
             from monkeytester_ai import imaging
             with mock.patch.object(imaging.subprocess, "run", side_effect=OSError("no sips")) as run:
                 with self.assertRaises(imaging.ImageError):
                     imaging.resize_with_sips(b"x", "png", 28, 28)
-            self.assertNotIn("VTAI_TOKEN", run.call_args.kwargs["env"])
+            self.assertNotIn("MTAI_TOKEN", run.call_args.kwargs["env"])
             self.assertEqual(run.call_args.args[0][:4], ["sips", "-z", "28", "28"])
 
     def test_service_install_lan_without_token_refuses(self):
         with mock.patch.dict(os.environ, {**self.env}, clear=False), \
-                mock.patch.dict(os.environ, {"VTAI_TOKEN": ""}), \
+                mock.patch.dict(os.environ, {"MTAI_TOKEN": ""}), \
                 mock.patch.object(runtime, "check_platform"), \
                 mock.patch.object(cli, "_launchctl") as launchctl, \
                 mock.patch.object(cli, "_plist_path", return_value=self.tmp / "agent.plist"):
@@ -162,7 +162,7 @@ class ChecksTests(TempCase):
             with redirect_stderr(err):
                 code = cli.main(["service", "install", "--lan"])
         self.assertEqual(code, 1)
-        self.assertIn("VTAI_TOKEN", err.getvalue())
+        self.assertIn("MTAI_TOKEN", err.getvalue())
         launchctl.assert_not_called()
         self.assertFalse((self.tmp / "agent.plist").exists())
 
@@ -172,8 +172,8 @@ class PlistTests(TempCase):
         plist = cli.build_plist(self.cfg, lan=True)
         plistlib.dumps(plist)
         self.assertEqual(plist["ProgramArguments"][1:], [str(BIN), "serve", "--lan"])
-        self.assertEqual(plist["EnvironmentVariables"]["VTAI_RUNTIME_DIR"], str(self.cfg.runtime_dir))
-        self.assertNotIn("VTAI_TOKEN", plist["EnvironmentVariables"])
+        self.assertEqual(plist["EnvironmentVariables"]["MTAI_RUNTIME_DIR"], str(self.cfg.runtime_dir))
+        self.assertNotIn("MTAI_TOKEN", plist["EnvironmentVariables"])
 
 
 class EndToEndTests(TempCase):
@@ -193,7 +193,7 @@ class EndToEndTests(TempCase):
         sips.write_text('#!/bin/sh\ncp "$4" "$6"\n')
         sips.chmod(0o755)
         self.env = {**os.environ, **self.env, "PATH": f"{fake_bin}:{os.environ['PATH']}"}
-        self.env.pop("VTAI_TOKEN", None)
+        self.env.pop("MTAI_TOKEN", None)
 
     def run_cli(self, *args, env=None):
         return subprocess.run([sys.executable, str(BIN), *args], env=env or self.env,
@@ -206,7 +206,7 @@ class EndToEndTests(TempCase):
         deadline = time.monotonic() + 15
         while time.monotonic() < deadline:
             try:
-                urllib.request.urlopen(f"http://127.0.0.1:{self.env['VTAI_PORT']}/health", timeout=1)
+                urllib.request.urlopen(f"http://127.0.0.1:{self.env['MTAI_PORT']}/health", timeout=1)
                 return proc
             except OSError:
                 time.sleep(0.1)
@@ -230,14 +230,14 @@ class EndToEndTests(TempCase):
         proc.send_signal(signal.SIGTERM)
         proc.wait(timeout=15)
         self.assertEqual(proc.returncode, 0)
-        self.assertFalse(runtime.port_in_use(int(self.env["VTAI_OLLAMA_PORT"])), "Ollama left running")
+        self.assertFalse(runtime.port_in_use(int(self.env["MTAI_OLLAMA_PORT"])), "Ollama left running")
 
     def test_restart_recovers_from_an_ollama_left_by_a_killed_gateway(self):
         proc = self.start()
         pid = int((self.cfg.runtime_dir / "ollama.pid").read_text())
         proc.kill()  # SIGKILL: the gateway can't clean up, so Ollama outlives it
         proc.wait(timeout=15)
-        self.assertTrue(runtime.port_in_use(int(self.env["VTAI_OLLAMA_PORT"])), "expected a leftover Ollama")
+        self.assertTrue(runtime.port_in_use(int(self.env["MTAI_OLLAMA_PORT"])), "expected a leftover Ollama")
         self.start()
         self.assertNotEqual(int((self.cfg.runtime_dir / "ollama.pid").read_text()), pid)
         self.assertEqual(runtime.command_of(pid), "")
@@ -254,10 +254,10 @@ class EndToEndTests(TempCase):
     def test_lan_requires_token(self):
         result = self.run_cli("serve", "--lan")
         self.assertEqual(result.returncode, 1)
-        self.assertIn("VTAI_TOKEN", result.stderr)
+        self.assertIn("MTAI_TOKEN", result.stderr)
 
     def test_lan_with_token_listens_and_enforces_it(self):
-        env = {**self.env, "VTAI_TOKEN": "s3cret"}
+        env = {**self.env, "MTAI_TOKEN": "s3cret"}
         self.start("--lan", env=env)
         self.assertEqual(self.run_cli("ask", str(FIXTURE), "q", env=env).returncode, 0)
         denied = self.run_cli("ask", str(FIXTURE), "q")
@@ -270,7 +270,7 @@ class EndToEndTests(TempCase):
         deadline = time.monotonic() + 20
         time.sleep(1)
         while time.monotonic() < deadline:
-            if runtime.port_in_use(int(self.env["VTAI_OLLAMA_PORT"])):
+            if runtime.port_in_use(int(self.env["MTAI_OLLAMA_PORT"])):
                 return
             time.sleep(0.2)
         self.fail("Ollama was not restarted")

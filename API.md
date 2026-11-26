@@ -10,7 +10,7 @@ plugin endpoints (`/devices`, `/actions`, `/jobs`) answer errors in the contract
 shape `{"error": message, "code": code}` with the contract's codes; everything else on
 this API keeps the nested shape below.
 
-If `VTAI_TOKEN` is set, every request except `/health` must send the token, in either
+If `MTAI_TOKEN` is set, every request except `/health` must send the token, in either
 spelling — both are accepted:
 
 - `Authorization: Bearer <token>` (the OpenAI-style chat call)
@@ -70,15 +70,15 @@ events and uploads aren't implemented.
 
 ## Model choice
 
-The service owns the model: `VTAI_MODEL` is only the starting Local selection. MonkeyTester's
+The service owns the model: `MTAI_MODEL` is only the starting Local selection. MonkeyTester's
 **Settings → Models** reads `GET /models` and switches with `POST /config` or the
 `set-model` job. Ollama hot-swaps the model, so the next chat request may reload it
 (`model_loaded` can become false).
 
 The provider, the Local model, the Copilot model and `remote_url`, `remote_model`,
 `remote_resize` are saved to `<runtime>/settings.json` (mode 600, written atomically) on every
-change, and that file wins over `VTAI_MODEL` at start. A saved Local model that is no longer
-installed falls back to `VTAI_MODEL` (logged). A saved `copilot` provider without a stored
+change, and that file wins over `MTAI_MODEL` at start. A saved Local model that is no longer
+installed falls back to `MTAI_MODEL` (logged). A saved `copilot` provider without a stored
 sign-in, or a saved `remote` provider without an address and model, starts as `local`.
 
 ## Providers
@@ -102,7 +102,7 @@ chosen). `models` comes from `GET {url}/v1/models` (the OpenAI list shape), aske
 timeout on every `GET /config`; it is `[]` when no address is set or the server can't be listed,
 and then `error` says why (`could not reach <url>/v1/models: <reason>`, or `the remote server
 rejected the API key`). `resize` defaults to `true`. The API key is stored in
-`<runtime>/remote.json` (mode 600, atomic; `VTAI_REMOTE_CONFIG` moves it) and is write-only:
+`<runtime>/remote.json` (mode 600, atomic; `MTAI_REMOTE_CONFIG` moves it) and is write-only:
 only `key.configured` and `key.last4` (empty for keys under 8 characters) are ever returned.
 
 `GET /config` → `copilot`:
@@ -165,7 +165,7 @@ at the HTTP level. Finished jobs stay queryable for at least 10 minutes.
   running service and returns the new value once in `new_token`; where the token is
   persisted (the start-at-login service) it is persisted there too.
 - `{"port": ...}` — always `400 invalid_request`: a running server cannot rebind.
-  Stop the service and restart it with `VTAI_PORT` (or reinstall the login service).
+  Stop the service and restart it with `MTAI_PORT` (or reinstall the login service).
 - `{"provider": "local" | "remote" | "copilot"}` — `copilot` without a stored sign-in is
   `400 invalid_request` "sign in to GitHub Copilot first"; `remote` without `remote_url` and
   `remote_model` (stored or in the same request) is `400` "set remote_url and remote_model first".
@@ -231,7 +231,7 @@ image they were sent. The 20MB limit and `stream: true` → 400 still apply.
 
 Coordinates in replies are device pixels, meaning pixels of the image you sent.
 
-For this to work, each image is resized to multiples of 28 within `VTAI_MAX_PIXELS`. When
+For this to work, each image is resized to multiples of 28 within `MTAI_MAX_PIXELS`. When
 a request has exactly one image, the gateway then:
 
 1. Adds a system message telling the model the resized dimensions.

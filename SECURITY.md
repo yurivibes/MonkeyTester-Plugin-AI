@@ -22,14 +22,14 @@ hardening tiers) lives in the MonkeyTester repo's `SECURITY.md`.
 
 | Area | Protection |
 |---|---|
-| Bind | `127.0.0.1` by default. `serve --lan` (and `service install --lan`) listens on all interfaces and **requires `VTAI_TOKEN`**: without it the command refuses to start, exits with status 1 and says how to set the token. The check is generic: any non-loopback bind needs a token. |
+| Bind | `127.0.0.1` by default. `serve --lan` (and `service install --lan`) listens on all interfaces and **requires `MTAI_TOKEN`**: without it the command refuses to start, exits with status 1 and says how to set the token. The check is generic: any non-loopback bind needs a token. |
 | Access | Every route except `GET /health` needs the token, as `Authorization: Bearer <token>` or (plugin routes) `X-Plugin-Token: <token>`, compared with `hmac.compare_digest`. |
 | `/health` | Unauthenticated and contains no secret: service/contract identity, active provider and model, readiness, and the plugin contract's `host: {os, hostname}`. No token, key, sign-in, remote address or Copilot user. |
-| Ollama | Bound to `127.0.0.1:<VTAI_OLLAMA_PORT>` only (`OLLAMA_HOST` is forced; any `OLLAMA_*` from the caller's environment is dropped). Only `POST /v1/chat/completions` is forwarded; Ollama's admin routes are not reachable through the gateway. |
-| Secrets at rest | `copilot.json` (GitHub OAuth token) and `remote.json` (remote API key) are written atomically with mode 0600; the LaunchAgent plist that holds `VTAI_TOKEN` is created with mode 0600 and rewritten 0600 on token rotation. |
+| Ollama | Bound to `127.0.0.1:<MTAI_OLLAMA_PORT>` only (`OLLAMA_HOST` is forced; any `OLLAMA_*` from the caller's environment is dropped). Only `POST /v1/chat/completions` is forwarded; Ollama's admin routes are not reachable through the gateway. |
+| Secrets at rest | `copilot.json` (GitHub OAuth token) and `remote.json` (remote API key) are written atomically with mode 0600; the LaunchAgent plist that holds `MTAI_TOKEN` is created with mode 0600 and rewritten 0600 on token rotation. |
 | Secrets over HTTP | No route returns a secret. `GET /config` shows `token: {configured, last4}` (last4 only for tokens of 8+ characters), `copilot: {configured, user, last4, saved_at}` and `remote.key: {configured, last4}`. A token rotated through `POST /config` is returned exactly once, in that response. |
 | Copilot token handling | The long-lived OAuth token is sent only to `api.github.com`; the short-lived Copilot token is cached in memory only and sent only to the API base from GitHub's token exchange when it is `https://` (or the configured base), else to the default `https://api.githubcopilot.com`. |
-| Child processes | argv lists only, never `shell=True`; `--` before the download URL. `VTAI_TOKEN` is removed from the environment of Ollama, `sips` and `curl`. |
+| Child processes | argv lists only, never `shell=True`; `--` before the download URL. `MTAI_TOKEN` is removed from the environment of Ollama, `sips` and `curl`. |
 | Requests | `Content-Length` required (411), body ≤ 20 MB (413, checked before reading), at most 16 images per chat request and 15 MB per decoded image (413), image dimensions ≤ 100 M pixels and PNG/JPEG only before `sips` sees them, bad JSON (including invalid UTF-8 and over-deep nesting) → 400, 60 s socket timeout per client read/write. |
 | Errors | Unexpected exceptions answer `500 internal_error` with only the exception type (`internal error: ValueError`); details go to the service log, never to the client. |
 | Outbound URLs | `urlopen` only opens `http://` / `https://`; `remote_url` must be `http(s)://host[:port][/path]` without credentials, query or fragment. |
@@ -46,7 +46,7 @@ hardening tiers) lives in the MonkeyTester repo's `SECURITY.md`.
 2. Give it to the service. Either let the CLI write the LaunchAgent:
 
    ```sh
-   export VTAI_TOKEN=<the token>
+   export MTAI_TOKEN=<the token>
    bin/monkeytester-ai service install --lan
    ```
 
@@ -56,7 +56,7 @@ hardening tiers) lives in the MonkeyTester repo's `SECURITY.md`.
    ```xml
    <key>EnvironmentVariables</key>
    <dict>
-     <key>VTAI_TOKEN</key><string>the-token</string>
+     <key>MTAI_TOKEN</key><string>the-token</string>
      ...
    </dict>
    ```
@@ -66,14 +66,14 @@ hardening tiers) lives in the MonkeyTester repo's `SECURITY.md`.
    **Settings** page. The viewer sends it on every call.
 
 To rotate: `POST /config {"token": {"generate": true}}` (returns the new token once and
-rewrites the plist), or reinstall the service with a new `VTAI_TOKEN`; then update the
+rewrites the plist), or reinstall the service with a new `MTAI_TOKEN`; then update the
 viewer's Settings.
 
 ## Not covered
 
 - **No TLS.** On `--lan`, the token and the screenshots travel as plaintext HTTP. For access
   from outside the LAN use a VPN (WireGuard, Tailscale), never a port forward.
-- **Plaintext secrets at rest.** `VTAI_TOKEN` in the plist, the GitHub OAuth token in
+- **Plaintext secrets at rest.** `MTAI_TOKEN` in the plist, the GitHub OAuth token in
   `copilot.json` and the remote API key in `remote.json` are plaintext (mode 0600). Anyone
   with your user's files has them.
 - **Local programs** on the Mac can reach Ollama's loopback port without a token.

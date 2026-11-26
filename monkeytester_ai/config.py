@@ -35,7 +35,7 @@ MODELS = {
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # The service's own secrets: never handed to a child process (Ollama, sips, curl).
-SECRET_ENV = ("VTAI_TOKEN",)
+SECRET_ENV = ("MTAI_TOKEN",)
 
 
 def child_env(base=None) -> dict:
@@ -87,16 +87,16 @@ class Config:
 
 def load(env=None) -> Config:
     env = os.environ if env is None else env
-    runtime_dir = Path(env.get("VTAI_RUNTIME_DIR") or REPO_ROOT / ".runtime").resolve()
-    copilot_config = env.get("VTAI_COPILOT_CONFIG")
-    remote_config = env.get("VTAI_REMOTE_CONFIG")
+    runtime_dir = Path(env.get("MTAI_RUNTIME_DIR") or REPO_ROOT / ".runtime").resolve()
+    copilot_config = env.get("MTAI_COPILOT_CONFIG")
+    remote_config = env.get("MTAI_REMOTE_CONFIG")
     return Config(
         runtime_dir=runtime_dir,
-        model=env.get("VTAI_MODEL") or DEFAULT_MODEL,
-        gateway_port=int(env.get("VTAI_PORT") or 8091),
-        ollama_port=int(env.get("VTAI_OLLAMA_PORT") or 11435),
-        token=(env.get("VTAI_TOKEN") or "").strip(),
-        max_pixels=int(env.get("VTAI_MAX_PIXELS") or 1_000_000),
+        model=env.get("MTAI_MODEL") or DEFAULT_MODEL,
+        gateway_port=int(env.get("MTAI_PORT") or 8091),
+        ollama_port=int(env.get("MTAI_OLLAMA_PORT") or 11435),
+        token=(env.get("MTAI_TOKEN") or "").strip(),
+        max_pixels=int(env.get("MTAI_MAX_PIXELS") or 1_000_000),
         copilot_config=(Path(copilot_config).expanduser().resolve() if copilot_config
                         else runtime_dir / "copilot.json"),
         remote_config=(Path(remote_config).expanduser().resolve() if remote_config

@@ -6,7 +6,7 @@ GitHub hands over an OAuth token. That token is long-lived and is what gets
 stored. Each chat request needs a short-lived Copilot token (about 30 minutes)
 that is exchanged from the OAuth token and cached in memory.
 
-The sign-in lives in <runtime>/copilot.json (VTAI_COPILOT_CONFIG overrides it),
+The sign-in lives in <runtime>/copilot.json (MTAI_COPILOT_CONFIG overrides it),
 written atomically with mode 0600. The OAuth token is plaintext at rest: the
 service reads it unattended, so a key kept on the same disk would add no real
 protection. No HTTP route ever returns it.
@@ -32,9 +32,9 @@ from pathlib import Path
 
 CLIENT_ID = "Iv1.b507a08c87ecfe98"
 # Overridable so tests (and a scratch instance) can point at a fake GitHub.
-GITHUB_URL = (os.environ.get("VTAI_GITHUB_URL") or "https://github.com").rstrip("/")
-GITHUB_API = (os.environ.get("VTAI_GITHUB_API") or "https://api.github.com").rstrip("/")
-DEFAULT_API = (os.environ.get("VTAI_COPILOT_API") or "https://api.githubcopilot.com").rstrip("/")
+GITHUB_URL = (os.environ.get("MTAI_GITHUB_URL") or "https://github.com").rstrip("/")
+GITHUB_API = (os.environ.get("MTAI_GITHUB_API") or "https://api.github.com").rstrip("/")
+DEFAULT_API = (os.environ.get("MTAI_COPILOT_API") or "https://api.githubcopilot.com").rstrip("/")
 DEFAULT_MODEL = "gpt-4o"
 
 EDITOR_HEADERS = {

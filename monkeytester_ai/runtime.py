@@ -53,7 +53,7 @@ def check_memory(model: str, total: int):
     if info and total < info.min_memory_bytes:
         raise RuntimeError_(
             f"{model} needs {info.min_memory_bytes // cfgmod.GIB}GB of memory; this Mac has "
-            f"{total // cfgmod.GIB}GB. Use the smaller model: VTAI_MODEL=qwen2.5vl:3b-q4_K_M"
+            f"{total // cfgmod.GIB}GB. Use the smaller model: MTAI_MODEL=qwen2.5vl:3b-q4_K_M"
         )
 
 
@@ -143,7 +143,7 @@ def install_ollama(cfg, url=cfgmod.OLLAMA_URL, sha256=cfgmod.OLLAMA_SHA256,
 
 def ollama_env(cfg) -> dict:
     """Environment that keeps Ollama's keys, models and port inside this project."""
-    # No OLLAMA_* from the caller (OLLAMA_HOST must stay loopback) and no VTAI_TOKEN.
+    # No OLLAMA_* from the caller (OLLAMA_HOST must stay loopback) and no MTAI_TOKEN.
     env = {k: v for k, v in cfgmod.child_env().items() if not k.startswith("OLLAMA_")}
     cfg.home_dir.mkdir(parents=True, exist_ok=True)
     cfg.models_dir.mkdir(parents=True, exist_ok=True)
@@ -194,7 +194,7 @@ class OllamaServer:
         self._stop_leftover()
         if port_in_use(self.cfg.ollama_port):
             raise RuntimeError_(
-                f"Port {self.cfg.ollama_port} is already in use. Stop that process or set VTAI_OLLAMA_PORT."
+                f"Port {self.cfg.ollama_port} is already in use. Stop that process or set MTAI_OLLAMA_PORT."
             )
         self.cfg.logs_dir.mkdir(parents=True, exist_ok=True)
         with open(self.cfg.logs_dir / "ollama.log", "ab") as log:
@@ -290,7 +290,7 @@ def persist_service_token(new_token: str) -> bool:
     """Store a rotated token where the current one is persisted.
 
     The only persistence for a token is the LaunchAgent plist written by `service install`
-    (which holds it in mode 600). When the token came only from VTAI_TOKEN in a shell,
+    (which holds it in mode 600). When the token came only from MTAI_TOKEN in a shell,
     there is no file to write back to and this returns False; the gateway keeps the new
     value for its own lifetime either way."""
     path = service_plist_path()
@@ -299,9 +299,9 @@ def persist_service_token(new_token: str) -> bool:
     with open(path, "rb") as handle:
         plist = plistlib.load(handle)
     env = plist.get("EnvironmentVariables")
-    if not isinstance(env, dict) or "VTAI_TOKEN" not in env:
+    if not isinstance(env, dict) or "MTAI_TOKEN" not in env:
         return False
-    env["VTAI_TOKEN"] = new_token
+    env["MTAI_TOKEN"] = new_token
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "wb") as handle:
         plistlib.dump(plist, handle)

@@ -175,14 +175,14 @@ def build_plist(cfg, lan: bool) -> dict:
     arguments = [sys.executable, str(ENTRY_POINT), "serve"] + (["--lan"] if lan else [])
     env = {
         "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-        "VTAI_RUNTIME_DIR": str(cfg.runtime_dir),
-        "VTAI_MODEL": cfg.model,
-        "VTAI_PORT": str(cfg.gateway_port),
-        "VTAI_OLLAMA_PORT": str(cfg.ollama_port),
-        "VTAI_MAX_PIXELS": str(cfg.max_pixels),
+        "MTAI_RUNTIME_DIR": str(cfg.runtime_dir),
+        "MTAI_MODEL": cfg.model,
+        "MTAI_PORT": str(cfg.gateway_port),
+        "MTAI_OLLAMA_PORT": str(cfg.ollama_port),
+        "MTAI_MAX_PIXELS": str(cfg.max_pixels),
     }
     if cfg.token:
-        env["VTAI_TOKEN"] = cfg.token
+        env["MTAI_TOKEN"] = cfg.token
     log = str(cfg.logs_dir / "service.log")
     return {
         "Label": SERVICE_LABEL,
@@ -252,7 +252,7 @@ def build_parser():
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("setup", help="install Ollama and the model into .runtime/").set_defaults(func=cmd_setup)
     serve = sub.add_parser("serve", help="run the service in the foreground")
-    serve.add_argument("--lan", action="store_true", help="listen on all interfaces; needs VTAI_TOKEN")
+    serve.add_argument("--lan", action="store_true", help="listen on all interfaces; needs MTAI_TOKEN")
     serve.set_defaults(func=cmd_serve)
     status = sub.add_parser("status", help="show what is installed and running")
     status.add_argument("--json", action="store_true", help="print one JSON object; exit 1 until set up")
@@ -263,7 +263,7 @@ def build_parser():
     ask.set_defaults(func=cmd_ask)
     service = sub.add_parser("service", help="manage starting at login")
     service.add_argument("action", choices=["install", "uninstall"])
-    service.add_argument("--lan", action="store_true", help="listen on all interfaces; needs VTAI_TOKEN")
+    service.add_argument("--lan", action="store_true", help="listen on all interfaces; needs MTAI_TOKEN")
     service.set_defaults(func=cmd_service)
     clean = sub.add_parser("clean", help="remove .runtime/ and the LaunchAgent")
     clean.add_argument("--yes", action="store_true", help="don't ask for confirmation")

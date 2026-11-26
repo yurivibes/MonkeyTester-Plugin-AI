@@ -40,7 +40,7 @@ cd MonkeyTester-Plugin-AI
 
 Needs Nix with flakes enabled (`experimental-features = nix-command flakes` in
 `~/.config/nix/nix.conf`). Run these from the repo root, because `.runtime/` lives in the
-checkout (or set `VTAI_RUNTIME_DIR`):
+checkout (or set `MTAI_RUNTIME_DIR`):
 
 ```bash
 nix run .#tests            # the unit tests (any OS)
@@ -119,8 +119,8 @@ Run `bin/monkeytester-ai serve`, then under **Configuration** in MonkeyTester se
 Create a token and listen on the network:
 
 ```bash
-export VTAI_TOKEN=$(openssl rand -hex 32)
-echo $VTAI_TOKEN
+export MTAI_TOKEN=$(openssl rand -hex 32)
+echo $MTAI_TOKEN
 bin/monkeytester-ai serve --lan
 ```
 
@@ -135,7 +135,7 @@ Then under **Configuration** in MonkeyTester set:
 In the current MonkeyTester viewer, enter the same token for the `monkeytester-ai` plugin
 in its **Settings** page.
 
-`--lan` refuses to start without `VTAI_TOKEN`: on the network the token is mandatory, on
+`--lan` refuses to start without `MTAI_TOKEN`: on the network the token is mandatory, on
 `127.0.0.1` it is optional. Traffic isn't encrypted, so only do this on a network you trust.
 See [SECURITY.md](SECURITY.md) for the threat model, token setup and what is not covered.
 
@@ -159,7 +159,7 @@ another Ollama's `/v1`) on a box with a GPU, e.g. `http://192.168.125.70:8080`. 
   unchanged except for the model, like Copilot.
 - **API key** (`remote_api_key`, optional): for a server started with `--api-key`. It is sent as
   `Authorization: Bearer <key>` to that server only, stored in `.runtime/remote.json` (mode 600;
-  `VTAI_REMOTE_CONFIG` moves it) and is write-only: no route returns it, you only see whether one
+  `MTAI_REMOTE_CONFIG` moves it) and is write-only: no route returns it, you only see whether one
   is set and its last four characters. A server that refuses the key gets
   "the remote server rejected the API key".
 
@@ -173,7 +173,7 @@ MonkeyTester's **Settings → Models** can switch the provider to GitHub Copilot
 GitHub's device flow, run by this service (`POST /copilot/device/start` and `/copilot/device/poll`,
 see [API.md](API.md)): you enter a short code at `github.com/login/device`, and the service checks
 that the account really has Copilot before it stores anything. The sign-in is kept in
-`.runtime/copilot.json` (mode 600; `VTAI_COPILOT_CONFIG` moves it) and no route ever returns it.
+`.runtime/copilot.json` (mode 600; `MTAI_COPILOT_CONFIG` moves it) and no route ever returns it.
 **Remove** deletes it and switches back to Local.
 
 Be aware of what this path is:
@@ -194,9 +194,9 @@ The provider, the model of each provider and the remote address and resize switc
 bin/monkeytester-ai service install
 ```
 
-For network access, export `VTAI_TOKEN` first and run `service install --lan` (it refuses
+For network access, export `MTAI_TOKEN` first and run `service install --lan` (it refuses
 without a token). The token is written to the LaunchAgent plist's `EnvironmentVariables`
-(`VTAI_TOKEN` key, file mode 600). The service runs with the settings in your shell at the
+(`MTAI_TOKEN` key, file mode 600). The service runs with the settings in your shell at the
 time you install it, so reinstall it to change them.
 
 To turn it off:
@@ -214,30 +214,30 @@ Run these as `bin/monkeytester-ai <command>`.
 | `setup` | Installs Ollama and the model |
 | `serve [--lan]` | Runs the service until you press Ctrl-C |
 | `status [--json]` | Shows what's installed and running. `--json` prints one object for programs, and exits 1 until setup has been done |
-| `ask <image> "<question>"` | Asks the running service about a PNG or JPEG. If the service uses a token, export `VTAI_TOKEN` first |
+| `ask <image> "<question>"` | Asks the running service about a PNG or JPEG. If the service uses a token, export `MTAI_TOKEN` first |
 | `service install [--lan]` | Starts the service now and at every login |
 | `service uninstall` | Stops that and removes it |
 | `clean [--yes]` | Deletes `.runtime/` and the login item, including the Copilot sign-in, the remote API key and the saved model choice. You'd need to run `setup` again |
 
 ## Settings
 
-Set these as environment variables, for example `VTAI_PORT=9000 bin/monkeytester-ai serve`.
+Set these as environment variables, for example `MTAI_PORT=9000 bin/monkeytester-ai serve`.
 
 | Variable | Default | What it does |
 |---|---|---|
-| `VTAI_MODEL` | `qwen2.5vl:7b-q4_K_M` | The **starting** Local selection, used until something is saved in `.runtime/settings.json`. MonkeyTester's Settings → Models can switch the model later through the config API without restarting; only models already installed in `.runtime/` can be picked. If a saved model is no longer installed, the service falls back to `VTAI_MODEL`. For Macs under 16GB, use `qwen2.5vl:3b-q4_K_M` (3.2GB) and rerun `setup` |
-| `VTAI_TOKEN` | None | The password clients must send (`Authorization: Bearer` or `X-Plugin-Token`) on every route except `/health`. **Mandatory with `--lan`** (any non-loopback bind): `serve --lan` and `service install --lan` refuse to start without it. Optional on the default `127.0.0.1` bind. Never passed to Ollama, `sips` or `curl` |
-| `VTAI_PORT` | `8091` | The port MonkeyTester connects to |
-| `VTAI_OLLAMA_PORT` | `11435` | Ollama's private port |
-| `VTAI_MAX_PIXELS` | `1000000` | The largest image the model sees. Raising it can help with tiny icons but is slower and uses more memory. Stay under about 3M |
-| `VTAI_RUNTIME_DIR` | `.runtime` | Where everything is stored, including `settings.json`, `copilot.json` and `remote.json` |
-| `VTAI_COPILOT_CONFIG` | `<runtime>/copilot.json` | Where the GitHub Copilot sign-in is stored |
-| `VTAI_REMOTE_CONFIG` | `<runtime>/remote.json` | Where the remote server's API key is stored |
-| `VTAI_GITHUB_URL`, `VTAI_GITHUB_API`, `VTAI_COPILOT_API` | GitHub's | Base URLs for the Copilot sign-in and API. Only for tests against a fake GitHub |
+| `MTAI_MODEL` | `qwen2.5vl:7b-q4_K_M` | The **starting** Local selection, used until something is saved in `.runtime/settings.json`. MonkeyTester's Settings → Models can switch the model later through the config API without restarting; only models already installed in `.runtime/` can be picked. If a saved model is no longer installed, the service falls back to `MTAI_MODEL`. For Macs under 16GB, use `qwen2.5vl:3b-q4_K_M` (3.2GB) and rerun `setup` |
+| `MTAI_TOKEN` | None | The password clients must send (`Authorization: Bearer` or `X-Plugin-Token`) on every route except `/health`. **Mandatory with `--lan`** (any non-loopback bind): `serve --lan` and `service install --lan` refuse to start without it. Optional on the default `127.0.0.1` bind. Never passed to Ollama, `sips` or `curl` |
+| `MTAI_PORT` | `8091` | The port MonkeyTester connects to |
+| `MTAI_OLLAMA_PORT` | `11435` | Ollama's private port |
+| `MTAI_MAX_PIXELS` | `1000000` | The largest image the model sees. Raising it can help with tiny icons but is slower and uses more memory. Stay under about 3M |
+| `MTAI_RUNTIME_DIR` | `.runtime` | Where everything is stored, including `settings.json`, `copilot.json` and `remote.json` |
+| `MTAI_COPILOT_CONFIG` | `<runtime>/copilot.json` | Where the GitHub Copilot sign-in is stored |
+| `MTAI_REMOTE_CONFIG` | `<runtime>/remote.json` | Where the remote server's API key is stored |
+| `MTAI_GITHUB_URL`, `MTAI_GITHUB_API`, `MTAI_COPILOT_API` | GitHub's | Base URLs for the Copilot sign-in and API. Only for tests against a fake GitHub |
 
-Set `VTAI_MODEL` the same way for `setup`, `serve` and `service install`; it only picks
+Set `MTAI_MODEL` the same way for `setup`, `serve` and `service install`; it only picks
 where the service starts, a later Settings → Models switch doesn't need any of them rerun.
-`serve` still needs Ollama and the `VTAI_MODEL` model installed even when Copilot or a remote
+`serve` still needs Ollama and the `MTAI_MODEL` model installed even when Copilot or a remote
 server is selected.
 
 ## Troubleshooting
@@ -247,9 +247,9 @@ Logs are in `.runtime/logs/`: `ollama.log` for the model, and `service.log` when
 | Problem | Fix |
 |---|---|
 | `Ollama is not installed` or `<model> is not installed` | Run `setup` |
-| `Port 11435 is already in use` | A previous run may still be alive. Find it with `lsof -i :11435` and stop it, or set `VTAI_OLLAMA_PORT` |
-| `Address already in use` on start | Something's on port 8091, possibly the login service. Check `status`, or set `VTAI_PORT` |
-| `401` from `ask` or MonkeyTester | The token doesn't match. Check `VTAI_TOKEN` and MonkeyTester's API key |
+| `Port 11435 is already in use` | A previous run may still be alive. Find it with `lsof -i :11435` and stop it, or set `MTAI_OLLAMA_PORT` |
+| `Address already in use` on start | Something's on port 8091, possibly the login service. Check `status`, or set `MTAI_PORT` |
+| `401` from `ask` or MonkeyTester | The token doesn't match. Check `MTAI_TOKEN` and MonkeyTester's API key |
 | `503 model backend unavailable` | Ollama is down or restarting. Check `ollama.log` |
 | `503 GitHub Copilot is not signed in` | Copilot is selected but the sign-in is gone. Sign in again in Settings → Models, or switch to Local |
 | Copilot `401`/`403` `upstream_error` | GitHub refused the sign-in (Copilot subscription ended, token revoked, or GitHub changed the editor API). Remove and sign in again |

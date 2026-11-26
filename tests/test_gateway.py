@@ -141,7 +141,10 @@ class RoutingTests(GatewayCase):
         self.assertEqual(health, {"ok": True, "service": "monkeytester-ai", "api_version": config.API_VERSION, "model": MODEL,
                                   "provider": "local", "model_loaded": True, "ollama": "running",
                                   "contract": "monkeytester-plugin", "contract_version": 1,
-                                  "plugin": {"name": "monkeytester-ai", "version": config.SERVICE_VERSION},
+                                  "plugin": {"name": "monkeytester-ai",
+                                             "default_name": "monkeytester-ai",
+                                             "renamable": True,
+                                             "version": config.SERVICE_VERSION},
                                   "host": {"os": sys.platform, "hostname": platform.node()},
                                   "devices": 1, "capabilities": [], "error": None, "docs": "/docs"})
 

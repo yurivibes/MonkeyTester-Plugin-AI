@@ -105,6 +105,13 @@ opens this README, which the service renders at `GET /docs` (see API.md). The se
 README.md from the checkout it runs from, so keep the file there; if it's missing, `/health`
 stops advertising `docs` and the link disappears.
 
+You can rename the plugin: the **Name** field in this plugin's **Configure** panel on
+MonkeyTester's **Settings → Plugins** page changes the name the service reports (`POST /config
+{"name": ...}`, see API.md → Plugin name). A name is 1–64 letters, digits, `_` or `-`, starting with
+a letter or digit. It is saved in `.runtime/settings.json` and survives restarts; **Reset to
+default** brings back `monkeytester-ai`. MonkeyTester still recognises the plugin as
+monkeytester-ai whatever it is called.
+
 ### MonkeyTester for Mac
 
 The app includes this service and runs it for you, so there's nothing to connect. Open **Window > Tool Status** and click **Set Up Vision Model** to download the model once.

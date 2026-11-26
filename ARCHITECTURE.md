@@ -167,7 +167,7 @@ only file written outside the project, and `service uninstall` or `clean` remove
 2. Starts Ollama and waits until it responds.
 3. Checks the model is installed and its digest matches the pin.
 4. Applies `settings.json` (a saved Local model that is no longer installed falls back to
-   `MTAI_MODEL`), starts listening, and with the `local` provider loads the model in the
+   `MTAI_MODEL`; a saved plugin `name` becomes `plugin.name` in `/health`), starts listening, and with the `local` provider loads the model in the
    background so that the first request isn't slow. A saved `remote` provider without an address
    and model starts as `local`. With `remote` or `copilot` nothing is preloaded; switching
    back to `local` lets the next request load the model.

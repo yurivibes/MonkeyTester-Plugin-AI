@@ -80,7 +80,7 @@ class ContractTests(PluginCase):
         _, health = self.call("/health")
         self.assertEqual(health["contract"], "monkeytester-plugin")
         self.assertEqual(health["contract_version"], 1)
-        self.assertEqual(health["plugin"], {"name": "monkeytester-ai", "default_name": "monkeytester-ai",
+        self.assertEqual(health["plugin"], {"name": "AI", "default_name": "AI",
                                             "renamable": True, "version": config.SERVICE_VERSION})
         self.assertEqual(health["service"], "monkeytester-ai")
         self.assertEqual(health["devices"], 1)
@@ -271,82 +271,115 @@ class RenameTests(PluginCase):
         return self.call("/health")[1]["plugin"]
 
     def test_default_name(self):
-        self.assertEqual(self.health_plugin()["name"], "monkeytester-ai")
+        self.assertEqual(self.health_plugin()["name"], "AI")
         body = self.call("/config", headers=self.auth())[1]
-        self.assertEqual(body["name"], "monkeytester-ai")
-        self.assertEqual(body["default_name"], "monkeytester-ai")
+        self.assertEqual(body["name"], "AI")
+        self.assertEqual(body["default_name"], "AI")
         self.assertFalse(self.cfg.settings_path.exists())
 
     def test_rename_is_reported_and_persists_across_a_restart(self):
-        status, body = self.rename("vision")
+        status, body = self.rename("VISION")
         self.assertEqual(status, 200)
         self.assertTrue(body["ok"])
-        self.assertEqual(body["config"]["name"], "vision")
-        self.assertEqual(body["config"]["default_name"], "monkeytester-ai")
+        self.assertEqual(body["config"]["name"], "VISION")
+        self.assertEqual(body["config"]["default_name"], "AI")
         _, health = self.call("/health")
-        self.assertEqual(health["plugin"]["name"], "vision")
-        self.assertEqual(health["plugin"]["default_name"], "monkeytester-ai")
+        self.assertEqual(health["plugin"]["name"], "VISION")
+        self.assertEqual(health["plugin"]["default_name"], "AI")
         self.assertIs(health["plugin"]["renamable"], True)
         self.assertEqual(health["service"], "monkeytester-ai")  # the service id never changes
-        self.assertEqual(json.loads(self.cfg.settings_path.read_text())["name"], "vision")
+        self.assertEqual(json.loads(self.cfg.settings_path.read_text())["name"], "VISION")
         self.restart()
-        self.assertEqual(self.health_plugin()["name"], "vision")
-        self.assertEqual(self.call("/config", headers=self.auth())[1]["name"], "vision")
+        self.assertEqual(self.health_plugin()["name"], "VISION")
+        self.assertEqual(self.call("/config", headers=self.auth())[1]["name"], "VISION")
 
     def test_posting_the_default_name_restores_it(self):
-        self.rename("vision")
-        status, body = self.rename("monkeytester-ai")
+        self.rename("VISION")
+        status, body = self.rename("AI")
         self.assertEqual(status, 200)
-        self.assertEqual(body["config"]["name"], "monkeytester-ai")
-        self.assertEqual(self.health_plugin()["name"], "monkeytester-ai")
+        self.assertEqual(body["config"]["name"], "AI")
+        self.assertEqual(self.health_plugin()["name"], "AI")
         self.assertNotIn("name", json.loads(self.cfg.settings_path.read_text()))
         self.restart()
-        self.assertEqual(self.health_plugin()["name"], "monkeytester-ai")
+        self.assertEqual(self.health_plugin()["name"], "AI")
 
     def test_bad_names_are_400_and_change_nothing(self):
-        self.rename("vision")
-        for bad in ("", " vision", "vision ", "-vision", "_v", "vi sion", "vision!", "a/b",
-                    "x" * 65, "vision\n", "visión", 7, None, True, ["vision"], {"n": 1}):
+        self.rename("VISION")
+        for bad in ("", " VISION", "VISION ", "-VISION", "_V", "VI SION", "VISION!", "A/B",
+                    "X" * 65, "VISION\n", "VISIÓN", "vision", "Vision", "a", "monkeytester-ai",
+                    7, None, True, ["VISION"], {"n": 1}):
             status, body = self.rename(bad)
             self.assertEqual(status, 400, repr(bad))
             self.assertEqual(body["error"]["code"], "bad_request", repr(bad))
-        self.assertEqual(self.health_plugin()["name"], "vision")
-        self.assertEqual(json.loads(self.cfg.settings_path.read_text())["name"], "vision")
+        self.assertEqual(self.health_plugin()["name"], "VISION")
+        self.assertEqual(json.loads(self.cfg.settings_path.read_text())["name"], "VISION")
 
     def test_bad_name_with_other_keys_changes_nothing(self):
-        status, _ = self.call("/config", {"name": "bad name", "model": MODEL2}, self.auth())
+        status, _ = self.call("/config", {"name": "BAD NAME", "model": MODEL2}, self.auth())
         self.assertEqual(status, 400)
         self.assertEqual(self.call("/health")[1]["model"], MODEL)
         self.assertFalse(self.cfg.settings_path.exists())
 
     def test_edge_names_accepted(self):
-        for good in ("a", "9", "A_b-C", "x" * 64):
+        for good in ("A", "9", "A_B-C", "X" * 64):
             status, _ = self.rename(good)
             self.assertEqual(status, 200, good)
             self.assertEqual(self.health_plugin()["name"], good)
 
     def test_name_alongside_model_change(self):
-        status, body = self.call("/config", {"name": "vision", "model": MODEL2}, self.auth())
+        status, body = self.call("/config", {"name": "VISION", "model": MODEL2}, self.auth())
         self.assertEqual(status, 200)
-        self.assertEqual(body["config"]["name"], "vision")
+        self.assertEqual(body["config"]["name"], "VISION")
         self.assertEqual(body["config"]["model"]["selected"], MODEL2)
 
     def test_invalid_stored_name_means_default(self):
         self.cfg.settings_path.write_text(json.dumps({"name": "not valid!"}))
         self.restart()
-        self.assertEqual(self.health_plugin()["name"], "monkeytester-ai")
+        self.assertEqual(self.health_plugin()["name"], "AI")
 
     def test_rename_requires_auth(self):
         for headers in ({}, {"X-Plugin-Token": "wrong0000token00"}):
-            status, body = self.call("/config", {"name": "vision"}, headers)
+            status, body = self.call("/config", {"name": "VISION"}, headers)
             self.assertEqual(status, 401)
             self.assertEqual(body["error"]["code"], "unauthorized")
         self.assertEqual(self.call("/config")[0], 401)
-        self.assertEqual(self.health_plugin()["name"], "monkeytester-ai")
-        status, _ = self.call("/config", {"name": "vision"},
+        self.assertEqual(self.health_plugin()["name"], "AI")
+        status, _ = self.call("/config", {"name": "VISION"},
                               {"Authorization": f"Bearer {self.token}"})
         self.assertEqual(status, 200)
-        self.assertEqual(self.health_plugin()["name"], "vision")
+        self.assertEqual(self.health_plugin()["name"], "VISION")
+
+    def test_lowercase_name_is_rejected_with_an_uppercase_message(self):
+        status, body = self.rename("vision")
+        self.assertEqual(status, 400)
+        self.assertEqual(body["error"]["code"], "bad_request")
+        self.assertIn("uppercase", body["error"]["message"])
+        self.assertEqual(self.health_plugin()["name"], "AI")
+        self.assertFalse(self.cfg.settings_path.exists())
+
+    def test_stored_lowercase_name_is_uppercased_on_load(self):
+        self.cfg.settings_path.write_text(json.dumps({"name": "vision"}))
+        self.restart()
+        self.assertEqual(self.health_plugin()["name"], "VISION")
+        self.rename("VISION2")
+        self.rename("VISION")
+        self.assertEqual(json.loads(self.cfg.settings_path.read_text())["name"], "VISION")
+
+    def test_stored_old_default_name_becomes_the_new_default(self):
+        for old in ("monkeytester-ai", "MONKEYTESTER-AI", "MonkeyTester-AI"):
+            self.cfg.settings_path.write_text(json.dumps({"name": old}))
+            self.restart()
+            plugin = self.health_plugin()
+            self.assertEqual(plugin["name"], "AI", old)
+            self.assertEqual(plugin["default_name"], "AI", old)
+        self.rename("VISION")
+        self.rename("AI")
+        self.assertNotIn("name", json.loads(self.cfg.settings_path.read_text()))
+
+    def test_stored_lowercase_ai_is_the_default(self):
+        self.cfg.settings_path.write_text(json.dumps({"name": "ai"}))
+        self.restart()
+        self.assertEqual(self.health_plugin()["name"], "AI")
 
 
 class StatusJsonTests(unittest.TestCase):

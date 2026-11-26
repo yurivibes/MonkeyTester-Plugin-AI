@@ -6,7 +6,15 @@ from dataclasses import dataclass
 from pathlib import Path
 
 API_VERSION = 3
+# Filesystem/service identifier: runtime paths, the LaunchAgent label, the `service` field of
+# /health. Never changes, so an installed service and its settings keep working.
 SERVICE_NAME = "monkeytester-ai"
+# The default plugin NAME reported as /health plugin.name and plugin.default_name. Plugin names
+# are uppercase (MonkeyTester calls the plugin in tests as `AI: set-model ...`).
+PLUGIN_DEFAULT_NAME = "AI"
+# Default names of older versions; a settings.json name equal to one of these (any case) is
+# read as the current default, so an installed service moves to "AI" by itself.
+LEGACY_DEFAULT_NAMES = (SERVICE_NAME, "MONKEYTESTER-AI")
 SERVICE_VERSION = "1.0.0"
 
 OLLAMA_VERSION = "v0.40.13"

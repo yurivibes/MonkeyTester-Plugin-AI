@@ -49,7 +49,7 @@ Branch on `code`. `message` is for people and can change.
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /health` | `{ok, service, api_version, provider, model, model_loaded, ollama}` plus the plugin fields `{contract, contract_version, plugin, host, devices, capabilities, error}` and `docs: "/docs"` when README.md is readable (omitted otherwise, so a copy without the README never advertises a broken link). `provider` is `local`, `remote` or `copilot`. `model` is the **active** model (the selected model of the active provider). `ok`: with `local`, Ollama is reachable; with `remote`, `remote_url` and `remote_model` are set; with `copilot`, a sign-in is stored (config-only checks: `/health` never waits on the remote server or GitHub). `model_loaded`: with `local`, false after 30 minutes idle (the next request reloads the model); with `remote` and `copilot`, same as `ok`. `ollama` always reports the private Ollama. `plugin` is `{name, default_name, renamable, version}`: `name` is the current (possibly user-chosen) name, `default_name` is always `monkeytester-ai`, `renamable` is `true` (see [Plugin name](#plugin-name)); `service` stays `monkeytester-ai` whatever the name |
+| `GET /health` | `{ok, service, api_version, provider, model, model_loaded, ollama}` plus the plugin fields `{contract, contract_version, plugin, host, devices, capabilities, error}` and `docs: "/docs"` when README.md is readable (omitted otherwise, so a copy without the README never advertises a broken link). `provider` is `local`, `remote` or `copilot`. `model` is the **active** model (the selected model of the active provider). `ok`: with `local`, Ollama is reachable; with `remote`, `remote_url` and `remote_model` are set; with `copilot`, a sign-in is stored (config-only checks: `/health` never waits on the remote server or GitHub). `model_loaded`: with `local`, false after 30 minutes idle (the next request reloads the model); with `remote` and `copilot`, same as `ok`. `ollama` always reports the private Ollama. `plugin` is `{name, default_name, renamable, version}`: `name` is the current (possibly user-chosen) name, `default_name` is always `AI`, `renamable` is `true` (see [Plugin name](#plugin-name)); `service` stays `monkeytester-ai` whatever the name |
 | `GET /docs` | This repo's README.md rendered as one self-contained HTML page (`text/html; charset=utf-8`, `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `Cache-Control: no-store`). Needs the token like every route but `/health`. README.md is read on every request; when it can't be read, `404 not_found`. The MonkeyTester viewer shows it from **Plugins → Documentation** (it fetches the page with the plugin's token and serves it under a sandbox CSP); browsers never call this service directly |
 | `GET /v1/models` | `{object, data: [{id, object}]}` with the active model |
 | `GET /models` | `{object, data, provider, selected, installed, error}`. `data` lists the **active provider's** models: installed Ollama models (`{id, object}`), the remote server's `/v1/models` ids (`{id, object}`), or the signed-in account's Copilot vision models (`{id, object, name, vendor}`). `selected` is the active model. `installed` is always the private Ollama list (empty while Ollama is offline). `error` is null, or why listing remote or Copilot models failed |
@@ -58,7 +58,7 @@ Branch on `code`. `message` is for people and can change.
 | `POST /jobs` | Start an action as a job; `202 {"job": <job>}` |
 | `GET /jobs/<id>?wait=<s>` | The job, blocking up to `wait` (0–60) seconds until it is terminal |
 | `POST /jobs/<id>/cancel` | Ask a running job to stop; `200 {"job": <job>}` |
-| `GET /config` | `{name, default_name, provider, model: {selected, installed}, remote: {...}, copilot: {...}, token: {configured, last4}, port, ollama_port, max_pixels, api_version, service}`. `name` is the current plugin name and `default_name` is `monkeytester-ai` (see [Plugin name](#plugin-name)). `model` is the **Local** (Ollama) selection. The token's value is never returned, only `configured` and `last4` (`null` for tokens shorter than 8 characters). See [Providers](#providers) for `remote` and `copilot` |
+| `GET /config` | `{name, default_name, provider, model: {selected, installed}, remote: {...}, copilot: {...}, token: {configured, last4}, port, ollama_port, max_pixels, api_version, service}`. `name` is the current plugin name and `default_name` is `AI` (see [Plugin name](#plugin-name)). `model` is the **Local** (Ollama) selection. The token's value is never returned, only `configured` and `last4` (`null` for tokens shorter than 8 characters). See [Providers](#providers) for `remote` and `copilot` |
 | `POST /config` | Change settings; returns `{ok, config}` plus `new_token` once when the token rotated |
 | `POST /copilot/device/start` | Start the GitHub device sign-in; `200 {user_code, verification_uri, interval, expires_in}` |
 | `POST /copilot/device/poll` | Poll the sign-in once; `200 {state, ...}` |
@@ -89,16 +89,30 @@ The name this service reports as `plugin.name` in `/health` can be changed by th
 MonkeyTester viewer edits it in this plugin's **Configure** panel on **Settings → Plugins**).
 This follows the renamable-plugin part of PLUGIN_API.md in the MonkeyTester repo.
 
-- `/health` `plugin`: `{"name": "<current>", "default_name": "monkeytester-ai", "renamable": true, "version": "1.0.0"}`.
+Plugin names are **uppercase**, and the default name is `AI`. MonkeyTester tests call a plugin
+by its name, the way they use built-in commands. For this plugin that covers the vision steps,
+`AI: VERIFY <text>`, `AI: CLICK <text>` and `AI: INPUT <args>` (MonkeyTester's runner turns each
+into a `/v1/chat/completions` request here; the bare `VERIFY:` / `CLICK:` / `INPUT:` steps are
+gone), and this plugin's one action, `AI: set-model model=<id>` (was
+`PLUGIN: monkeytester-ai set-model ...`). After a rename, tests use the new name
+(`VISION: CLICK Login`).
+
+- `/health` `plugin`: `{"name": "<current>", "default_name": "AI", "renamable": true, "version": "1.0.0"}`.
   `default_name` never changes; MonkeyTester identifies this plugin by it, never by `name`.
 - `POST /config {"name": "<new>"}` (needs the token like every route but `/health`). The name must be
-  a string matching `^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$` (no surrounding spaces are stripped);
-  anything else is `400 bad_request` in the nested error shape and changes nothing. A valid name
+  a string matching `^[A-Z0-9][A-Z0-9_-]{0,63}$` (uppercase only; nothing is uppercased or
+  stripped for you); anything else, including a lowercase name, is `400 bad_request` in the nested error shape and changes nothing. A valid name
   answers `{ok: true, config}`, `/health` reports it right away, and it is saved to
   `<runtime>/settings.json`, so it survives a restart. Posting the `default_name` value restores
   the default name (it is then removed from `settings.json`).
-- `GET /config` includes `"name": "<current>"` and `"default_name": "monkeytester-ai"`.
-- A missing or invalid `name` in `settings.json` means the default name.
+- `GET /config` includes `"name": "<current>"` and `"default_name": "AI"`.
+- A missing or invalid `name` in `settings.json` means the default name. A name saved by an older
+  version under the old mixed-case rule (`^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$`) is uppercased when the
+  service starts: a saved `vision` is reported as `VISION`, and a saved old default
+  (`monkeytester-ai` or `MONKEYTESTER-AI`, any case) is read as the default `AI`. The file is rewritten with the uppercase name (or without `name`) the
+  next time settings are saved.
+- Only the plugin **name** is uppercase. `service`, the runtime directory, the LaunchAgent label and
+  the CLI (`bin/monkeytester-ai`) keep the lowercase `monkeytester-ai`.
 
 ## Providers
 
@@ -281,7 +295,12 @@ The `remote` provider (`remote_url`, `remote_model`, `remote_resize`, `remote_ap
 The renamable plugin name (`plugin.default_name` and `plugin.renamable` in `/health`, `name` in
 `POST /config`, `name` and `default_name` in `GET /config`, the `bad_request` code for an invalid
 name) is additive too: `API_VERSION` stays 3, and a client that ignores the new fields sees
-`plugin.name` as before (`monkeytester-ai` until someone renames the plugin).
+`plugin.name` as before (`AI` until someone renames the plugin).
+
+Uppercase plugin names (`default_name` `AI` instead of `monkeytester-ai`, `POST /config {"name"}` rejecting
+lowercase, saved lowercase names uppercased on load) change what `plugin.name` reports; this ships
+together with the MonkeyTester viewer that expects uppercase names and `<NAME>: <action>` steps.
+`API_VERSION` stays 3 and `contract_version` stays 1.
 
 ## Migrating from version 2
 

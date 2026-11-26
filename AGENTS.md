@@ -52,7 +52,8 @@ anything; that section is the single source for them. In short:
 | `bin/monkeytester-ai` | CLI entry point (`setup`, `serve`, `status`, `ask`, `service`, `clean`) |
 | `monkeytester_ai/config.py` | Pins and `MTAI_*` settings |
 | `monkeytester_ai/runtime.py` | Ollama download, install checks, process supervision |
-| `monkeytester_ai/gateway.py` | HTTP server, auth, provider switch, jobs, `settings.json` |
+| `monkeytester_ai/gateway.py` | HTTP server, auth, provider switch, jobs, `settings.json`; `GET /docs` and the `/health` `docs` field |
+| `monkeytester_ai/docs_page.py` | README.md → HTML renderer for `GET /docs`. A verbatim copy shared by every MonkeyTester plugin: don't edit it here, report bugs instead |
 | `monkeytester_ai/imaging.py` | Resize (`sips`) and coordinate rescaling |
 | `monkeytester_ai/remote.py` | Remote provider: address, `/v1/models`, API key |
 | `monkeytester_ai/copilot.py` | GitHub device-flow sign-in and Copilot forwarding |

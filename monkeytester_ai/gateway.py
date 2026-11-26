@@ -21,6 +21,7 @@ import binascii
 import hmac
 import ipaddress
 import json
+import os
 import platform
 import re
 import secrets
@@ -32,11 +33,13 @@ import urllib.parse
 import urllib.request
 from dataclasses import replace
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 from . import config as cfgmod
 from . import copilot as copilotmod
 from . import imaging, runtime
 from . import remote as remotemod
+from .docs_page import docs_html
 
 MAX_BODY_BYTES = 20 * 1024 * 1024
 MAX_IMAGES = 16                         # image parts per chat request
@@ -70,6 +73,32 @@ ACTIONS = [
     },
 ]
 ACTION_NAMES = {action["name"] for action in ACTIONS}
+
+# GET /docs renders the repo's README.md, read at request time and resolved from this
+# file (not the CWD). The service runs from the checkout (flake.nix insists on it), so the
+# README is normally there; when it isn't, /health omits "docs" and /docs answers 404.
+README_PATH = Path(__file__).resolve().parent.parent / "README.md"
+DOCS_HEADERS = {
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; "
+                               "form-action 'none'; frame-ancestors 'none'",
+    "X-Content-Type-Options": "nosniff",
+    "Cache-Control": "no-store",
+}
+
+
+def readme_available():
+    """Cheap check behind /health's "docs" field: README.md is a readable file."""
+    return README_PATH.is_file() and os.access(README_PATH, os.R_OK)
+
+
+def docs_page():
+    """The rendered README.md for GET /docs, or None when it can't be read."""
+    try:
+        text = README_PATH.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+    return docs_html(cfgmod.SERVICE_NAME, text, cfgmod.SERVICE_VERSION)
 
 
 class BadRequest(Exception):
@@ -220,7 +249,7 @@ class Gateway:
 
     def health(self):
         usable, loaded, reachable = self._usable()
-        return {
+        payload = {
             "ok": usable,
             "service": cfgmod.SERVICE_NAME,
             "api_version": cfgmod.API_VERSION,
@@ -236,6 +265,9 @@ class Gateway:
             "capabilities": [],
             "error": None,
         }
+        if readme_available():
+            payload["docs"] = "/docs"
+        return payload
 
     def models(self):
         return {"object": "list", "data": [{"id": self.active_model, "object": "model"}]}
@@ -793,6 +825,18 @@ def make_handler(gateway):
             self.end_headers()
             self.wfile.write(body)
 
+        def _send_docs(self):
+            body = docs_page()
+            if body is None:
+                self._send_error(404, "not_found", "documentation unavailable: README.md not found")
+                return
+            self.send_response(200)
+            for name, value in DOCS_HEADERS.items():
+                self.send_header(name, value)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
         def _send_error(self, status, code, message, contract=False):
             if contract:
                 self._send(status, {"error": message, "code": code})
@@ -839,6 +883,9 @@ def make_handler(gateway):
             elif path == "/config":
                 if self._authorized():
                     self._send(200, gateway.config_get())
+            elif path == "/docs":
+                if self._authorized():
+                    self._send_docs()
             elif path in ("/devices", "/actions"):
                 if not self._authorized(contract=True):
                     return

@@ -143,7 +143,7 @@ class RoutingTests(GatewayCase):
                                   "contract": "monkeytester-plugin", "contract_version": 1,
                                   "plugin": {"name": "monkeytester-ai", "version": config.SERVICE_VERSION},
                                   "host": {"os": sys.platform, "hostname": platform.node()},
-                                  "devices": 1, "capabilities": [], "error": None})
+                                  "devices": 1, "capabilities": [], "error": None, "docs": "/docs"})
 
     def test_models(self):
         self.assertEqual(self.call("/v1/models")[1]["data"][0]["id"], MODEL)

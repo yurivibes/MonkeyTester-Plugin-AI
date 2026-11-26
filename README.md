@@ -100,6 +100,11 @@ Models** lists the models installed here (`GET /models`) and switches between th
 **Configuration** tables below stays ignored: whatever it says, the service answers with
 the selected model.
 
+MonkeyTester's **Plugins** page shows a **Documentation** link under this plugin's address: it
+opens this README, which the service renders at `GET /docs` (see API.md). The service reads
+README.md from the checkout it runs from, so keep the file there; if it's missing, `/health`
+stops advertising `docs` and the link disappears.
+
 ### MonkeyTester for Mac
 
 The app includes this service and runs it for you, so there's nothing to connect. Open **Window > Tool Status** and click **Set Up Vision Model** to download the model once.

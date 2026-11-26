@@ -80,7 +80,9 @@ class ContractTests(PluginCase):
         _, health = self.call("/health")
         self.assertEqual(health["contract"], "monkeytester-plugin")
         self.assertEqual(health["contract_version"], 1)
-        self.assertEqual(health["plugin"], {"name": "monkeytester-ai", "version": config.SERVICE_VERSION})
+        self.assertEqual(health["plugin"], {"name": "monkeytester-ai", "default_name": "monkeytester-ai",
+                                            "renamable": True, "version": config.SERVICE_VERSION})
+        self.assertEqual(health["service"], "monkeytester-ai")
         self.assertEqual(health["devices"], 1)
         self.assertEqual(health["capabilities"], [])
         self.assertIsNone(health["error"])
@@ -248,6 +250,103 @@ class PluginAuthTests(PluginCase):
         status, body = self.call("/devices")
         self.assertEqual(status, 401)
         self.assertEqual(body["code"], "unauthorized")
+
+
+class RenameTests(PluginCase):
+    """The renamable plugin name: POST /config {"name"}, /health plugin.name, settings.json."""
+    token = "beef0000cafe5678"
+
+    def auth(self):
+        return {"X-Plugin-Token": self.token}
+
+    def rename(self, name):
+        return self.call("/config", {"name": name}, self.auth())
+
+    def restart(self):
+        """A new Gateway on the same runtime dir, as after a service restart."""
+        self.app = gateway.Gateway(self.cfg)
+        self.httpd.RequestHandlerClass = gateway.make_handler(self.app)
+
+    def health_plugin(self):
+        return self.call("/health")[1]["plugin"]
+
+    def test_default_name(self):
+        self.assertEqual(self.health_plugin()["name"], "monkeytester-ai")
+        body = self.call("/config", headers=self.auth())[1]
+        self.assertEqual(body["name"], "monkeytester-ai")
+        self.assertEqual(body["default_name"], "monkeytester-ai")
+        self.assertFalse(self.cfg.settings_path.exists())
+
+    def test_rename_is_reported_and_persists_across_a_restart(self):
+        status, body = self.rename("vision")
+        self.assertEqual(status, 200)
+        self.assertTrue(body["ok"])
+        self.assertEqual(body["config"]["name"], "vision")
+        self.assertEqual(body["config"]["default_name"], "monkeytester-ai")
+        _, health = self.call("/health")
+        self.assertEqual(health["plugin"]["name"], "vision")
+        self.assertEqual(health["plugin"]["default_name"], "monkeytester-ai")
+        self.assertIs(health["plugin"]["renamable"], True)
+        self.assertEqual(health["service"], "monkeytester-ai")  # the service id never changes
+        self.assertEqual(json.loads(self.cfg.settings_path.read_text())["name"], "vision")
+        self.restart()
+        self.assertEqual(self.health_plugin()["name"], "vision")
+        self.assertEqual(self.call("/config", headers=self.auth())[1]["name"], "vision")
+
+    def test_posting_the_default_name_restores_it(self):
+        self.rename("vision")
+        status, body = self.rename("monkeytester-ai")
+        self.assertEqual(status, 200)
+        self.assertEqual(body["config"]["name"], "monkeytester-ai")
+        self.assertEqual(self.health_plugin()["name"], "monkeytester-ai")
+        self.assertNotIn("name", json.loads(self.cfg.settings_path.read_text()))
+        self.restart()
+        self.assertEqual(self.health_plugin()["name"], "monkeytester-ai")
+
+    def test_bad_names_are_400_and_change_nothing(self):
+        self.rename("vision")
+        for bad in ("", " vision", "vision ", "-vision", "_v", "vi sion", "vision!", "a/b",
+                    "x" * 65, "vision\n", "visión", 7, None, True, ["vision"], {"n": 1}):
+            status, body = self.rename(bad)
+            self.assertEqual(status, 400, repr(bad))
+            self.assertEqual(body["error"]["code"], "bad_request", repr(bad))
+        self.assertEqual(self.health_plugin()["name"], "vision")
+        self.assertEqual(json.loads(self.cfg.settings_path.read_text())["name"], "vision")
+
+    def test_bad_name_with_other_keys_changes_nothing(self):
+        status, _ = self.call("/config", {"name": "bad name", "model": MODEL2}, self.auth())
+        self.assertEqual(status, 400)
+        self.assertEqual(self.call("/health")[1]["model"], MODEL)
+        self.assertFalse(self.cfg.settings_path.exists())
+
+    def test_edge_names_accepted(self):
+        for good in ("a", "9", "A_b-C", "x" * 64):
+            status, _ = self.rename(good)
+            self.assertEqual(status, 200, good)
+            self.assertEqual(self.health_plugin()["name"], good)
+
+    def test_name_alongside_model_change(self):
+        status, body = self.call("/config", {"name": "vision", "model": MODEL2}, self.auth())
+        self.assertEqual(status, 200)
+        self.assertEqual(body["config"]["name"], "vision")
+        self.assertEqual(body["config"]["model"]["selected"], MODEL2)
+
+    def test_invalid_stored_name_means_default(self):
+        self.cfg.settings_path.write_text(json.dumps({"name": "not valid!"}))
+        self.restart()
+        self.assertEqual(self.health_plugin()["name"], "monkeytester-ai")
+
+    def test_rename_requires_auth(self):
+        for headers in ({}, {"X-Plugin-Token": "wrong0000token00"}):
+            status, body = self.call("/config", {"name": "vision"}, headers)
+            self.assertEqual(status, 401)
+            self.assertEqual(body["error"]["code"], "unauthorized")
+        self.assertEqual(self.call("/config")[0], 401)
+        self.assertEqual(self.health_plugin()["name"], "monkeytester-ai")
+        status, _ = self.call("/config", {"name": "vision"},
+                              {"Authorization": f"Bearer {self.token}"})
+        self.assertEqual(status, 200)
+        self.assertEqual(self.health_plugin()["name"], "vision")
 
 
 class StatusJsonTests(unittest.TestCase):

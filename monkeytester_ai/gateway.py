@@ -12,7 +12,8 @@ resize/rescale pipeline), "remote" (an OpenAI-compatible server at a user-entere
 address, see remote.py; the Qwen pipeline is on unless remote_resize is false) and
 "copilot" (GitHub Copilot, see copilot.py, passed through unchanged except for the
 model). The choice of provider, each provider's model, the remote address and its
-resize switch are persisted in <runtime>/settings.json.
+resize switch are persisted in <runtime>/settings.json, as is a user-chosen plugin
+name (plugin.name in /health; the default is config.SERVICE_NAME).
 """
 from __future__ import annotations
 
@@ -58,7 +59,13 @@ PROVIDERS = ("local", "remote", "copilot")
 NOT_SIGNED_IN = "sign in to GitHub Copilot first"
 REMOTE_NOT_SET = "set remote_url and remote_model first"
 CONFIG_KEYS = {"model", "token", "port", "provider", "copilot_model",
-               "remote_url", "remote_model", "remote_resize", "remote_api_key"}
+               "remote_url", "remote_model", "remote_resize", "remote_api_key", "name"}
+# PLUGIN_NAME_RE of PLUGIN_API.md (MonkeyTester repo): what /health plugin.name may be.
+PLUGIN_NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}")
+
+
+def valid_plugin_name(value):
+    return isinstance(value, str) and PLUGIN_NAME_RE.fullmatch(value) is not None
 
 ACTIONS = [
     {
@@ -165,6 +172,7 @@ class Gateway:
         self.remote_url = ""      # normalised, without /v1
         self.remote_model = ""
         self.remote_resize = True
+        self.name = cfgmod.SERVICE_NAME  # plugin.name in /health; renamable via POST /config
         self.jobs = {}
         self._job_seq = 0
         self._jobs_lock = threading.Lock()
@@ -176,6 +184,12 @@ class Gateway:
     def _load_settings(self):
         """settings.json wins over MTAI_MODEL; without a file nothing changes."""
         stored = copilotmod.read_json(self.cfg.settings_path)
+        name = stored.get("name")
+        if valid_plugin_name(name):
+            self.name = name
+        elif name is not None:
+            _log(f"ignoring invalid plugin name {name!r} in settings.json; "
+                 f"using {cfgmod.SERVICE_NAME}")
         model = stored.get("model")
         if isinstance(model, str) and model:
             self.cfg = replace(self.cfg, model=model)
@@ -201,11 +215,14 @@ class Gateway:
             self.provider = provider
 
     def save_settings(self):
+        settings = {
+            "provider": self.provider, "model": self.cfg.model,
+            "copilot_model": self.copilot_model, "remote_url": self.remote_url,
+            "remote_model": self.remote_model, "remote_resize": self.remote_resize}
+        if self.name != cfgmod.SERVICE_NAME:  # no "name" means the default name
+            settings["name"] = self.name
         with self._settings_lock:
-            copilotmod.write_private_json(self.cfg.settings_path, {
-                "provider": self.provider, "model": self.cfg.model,
-                "copilot_model": self.copilot_model, "remote_url": self.remote_url,
-                "remote_model": self.remote_model, "remote_resize": self.remote_resize})
+            copilotmod.write_private_json(self.cfg.settings_path, settings)
 
     def reconcile_local_model(self):
         """After Ollama starts: a persisted local model that is gone falls back to MTAI_MODEL."""
@@ -259,7 +276,8 @@ class Gateway:
             "ollama": "running" if reachable else "unreachable",
             "contract": PLUGIN_CONTRACT,
             "contract_version": PLUGIN_CONTRACT_VERSION,
-            "plugin": {"name": cfgmod.SERVICE_NAME, "version": cfgmod.SERVICE_VERSION},
+            "plugin": {"name": self.name, "default_name": cfgmod.SERVICE_NAME,
+                       "renamable": True, "version": cfgmod.SERVICE_VERSION},
             "host": {"os": sys.platform, "hostname": platform.node()},
             "devices": 1,
             "capabilities": [],
@@ -349,6 +367,8 @@ class Gateway:
     def config_get(self):
         token = self.cfg.token
         return {
+            "name": self.name,
+            "default_name": cfgmod.SERVICE_NAME,
             "provider": self.provider,
             "model": {"selected": self.cfg.model, "installed": self.installed_models()},
             "copilot": self.copilot_public(),
@@ -441,6 +461,12 @@ class Gateway:
             raise BadRequest("a running server cannot rebind; stop the service and restart it "
                              "with MTAI_PORT (reinstall the login service with the new value)")
         # Validate everything that can fail before changing anything.
+        name = self.name
+        if "name" in request:
+            name = request["name"]
+            if not valid_plugin_name(name):
+                raise BadRequest("name must be 1-64 characters: letters, digits, '_' or '-', "
+                                 "starting with a letter or digit", code="bad_request")
         provider = request.get("provider", self.provider)
         if provider not in PROVIDERS:
             raise BadRequest('provider must be "local", "remote" or "copilot"')
@@ -479,6 +505,10 @@ class Gateway:
         selection = (provider, copilot_model, model, remote_url, remote_model, remote_resize)
         changed = selection != (self.provider, self.copilot_model, self.cfg.model,
                                 self.remote_url, self.remote_model, self.remote_resize)
+        if name != self.name:
+            _log(f"plugin name changed from {self.name} to {name}")
+            self.name = name
+            changed = True
         if remote_key is not None:
             if remote_key:
                 self.remote_key.set(remote_key)
